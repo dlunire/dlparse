@@ -1,0 +1,19 @@
+{
+    "name": "dlunire/dlparse",
+    "description": "DLParse es una biblioteca PHP para parsear y analizar rutas, URLs, plantillas, inputs HTTP, Markdown y entornos tipados. Permite procesar datos de manera estructurada, segura y consistente, facilitando la validación, normalización y construcción de sistemas dinámicos y robustos.",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "DLParse\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "David Eduardo Luna Montilla",
+            "email": "dlunireframework@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {}
+}
