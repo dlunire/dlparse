@@ -49,7 +49,7 @@ final class ParserException extends Exception {
      */
     public function __construct(
         string $message = 'Error durante el proceso de parsing.',
-        int $code = 0,
+        int $code = 500,
         ?\Throwable $previous = null
     ) {
         parent::__construct($message, $code, $previous);

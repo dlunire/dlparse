@@ -21,19 +21,20 @@ namespace DLParse\Exceptions;
 use Exception;
 
 /**
- * TokenizerException
+ * NormalizerException
  *
- * Se lanza cuando ocurre un error durante la fase de tokenización
- * (análisis léxico) del input.
+ * Se lanza cuando ocurre un error durante la fase de normalización
+ * del input antes del análisis léxico.
  *
  * Ejemplos:
- * - Carácter inesperado o no reconocido
- * - Secuencia inválida para un token
- * - Literal mal formado (string, número, etc.)
- * - Fin de entrada dentro de un token incompleto
+ * - Secuencia Unicode inválida
+ * - Codificación no soportada
+ * - Byte Order Mark (BOM) corrupto
+ * - Secuencia de bytes ilegible o inconsistente
+ * - Transformación de preprocesamiento fallida
  *
- * Uso típico: tokenizers, lexers, scanners o analizadores léxicos
- * de lenguajes formales y DSLs.
+ * Uso típico: normalizadores de entrada, preprocesadores,
+ * canonicalizadores y etapas previas a la tokenización.
  *
  * @package DLParse\Exceptions
  * @version v0.0.1
@@ -41,14 +42,14 @@ use Exception;
  * @author David E Luna M
  * @copyright Copyright (c) 2026 David E Luna M
  */
-final class TokenizerException extends Exception {
+final class NormalizerException extends Exception {
     /**
-     * @param string          $message  Mensaje descriptivo del error léxico
+     * @param string          $message  Mensaje descriptivo del error de normalización
      * @param int             $code     Código de error (0 por defecto)
      * @param \Throwable|null $previous Excepción previa (encadenamiento)
      */
     public function __construct(
-        string $message = 'Error durante la tokenización del input.',
+        string $message = 'Error durante la normalización del input.',
         int $code = 500,
         ?\Throwable $previous = null
     ) {
