@@ -229,12 +229,6 @@ abstract class Normalizer {
      * - Remueve cualquier marcador de orden de bytes (BOM) inicial, dejando el cursor
      *    posicionado después de los BOM consecutivos.
      *
-     * @package DLParse\Core\Lexical
-     * @version v0.0.1 (release)
-     * @author David E Luna M <dlunireframework@gmail.com>
-     * @copyright (c) 2026 David E Luna M
-     * @license MIT
-     *
      * @param string $content Contenido crudo a cargar en el normalizador.
      * @param bool $collapse Indica si los espacios en blanco consecutivos deben colapsarse a uno solo.
      * @return void
