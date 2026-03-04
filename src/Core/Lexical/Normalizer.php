@@ -96,7 +96,7 @@ abstract class Normalizer {
      * 
      * @var non-empty-string
      */
-    private const BREAK_LINE = "\x0A";
+    protected const BREAK_LINE = "\x0A";
 
     /**
      * Espacios en blanco horizontales a ser normalizados.
@@ -158,28 +158,28 @@ abstract class Normalizer {
      * 
      * @var non-empty-string
      */
-    private const WHITE_SPACE = "\x20";
+    protected const WHITE_SPACE = "\x20";
 
     /**
      * Valor nulo a ser eliminado
      * 
      * @var non-empty-string
      */
-    private const NULL_VALUE = "\x00";
+    protected const NULL_VALUE = "\x00";
 
     /**
      * Retorno de de carro `\r`.
      * 
      * @var non-empty-string
      */
-    private const CART_RETURN = "\x0d";
+    protected const CART_RETURN = "\x0d";
 
     /**
      * Tabulación horizontal.
      * 
      * @var non-empty-string
      */
-    private const TAB = "\x09";
+    protected const TAB = "\x09";
 
     /**
      * Bytes que serán eliminados al principio y final de la cadena de bytes. Se utilizará
