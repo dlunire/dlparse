@@ -13,8 +13,8 @@ class Test extends Tokenizer {
         parent::__construct($content);
     }
 
-    public function test(): void {
-        $this->normalize_content();
+    public function test(): string {
+        return $this->get_normalized_content();
     }
 }
 
@@ -109,4 +109,4 @@ EOT;
 
 $test = new Test($content);
 
-$test->test();
+echo $test->test();
