@@ -15,7 +15,7 @@ abstract class Tokenizer extends Normalizer {
      */
     private array $tokens = [];
 
-    public function __construct(string $content) {
-        parent::__construct($content);
+    public function __construct(string $content, bool $collapse = false) {
+        parent::__construct($content, $collapse);
     }
 }

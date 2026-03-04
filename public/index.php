@@ -10,10 +10,11 @@ require_once dirname(__DIR__) . "/vendor/autoload.php";
 class Test extends Tokenizer {
 
     public function __construct(string $content) {
-        parent::__construct($content);
+        parent::__construct($content, false);
     }
 
     public function test(): string {
+        header("content-type: text/plain; charset=utf-8", true, 200);
         return $this->get_normalized_content();
     }
 }
@@ -22,6 +23,9 @@ class Test extends Tokenizer {
 $content = <<<EOT
 # Indica si la aplicación debe correr o no en producción:
 DL_PRODUCTION: boolean = false
+
+
+
 
 # Servidor de la base de datos:
 DL_DATABASE_HOST: string = "localhost"

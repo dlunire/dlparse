@@ -19,7 +19,6 @@ declare(strict_types=1);
 namespace DLParse\Core\Lexical;
 
 use DLParse\Exceptions\NormalizerException;
-use DLParse\Exceptions\TokenizerException;
 
 /**
  * Normalizador de bytes, previo a la tokenización.
@@ -254,7 +253,7 @@ abstract class Normalizer {
      * Normaliza el contenido crudo
      *
      * @return void
-     * @throws TokenizerException
+     * @throws NormalizerException
      */
     private function normalize_content(): void {
         $this->remove_bom();
