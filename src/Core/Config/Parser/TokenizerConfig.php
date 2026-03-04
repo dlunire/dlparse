@@ -32,12 +32,12 @@ use DLParse\Core\Lexical\Normalizer;
 
 abstract class TokenizerConfig extends Normalizer {
 
-    /** @var string[] */
-    private array $tokens = [];
+    /** @var string[] Identificadores */
+    private array $identifiers = [];
 
     public function __construct(string $content, bool $collapse = true) {
         parent::__construct($content, $collapse);
     }
 
-    
+
 }
