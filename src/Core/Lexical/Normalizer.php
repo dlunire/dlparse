@@ -135,9 +135,6 @@ abstract class Normalizer {
         "\xE2\x80\x89",   // THIN SPACE
         "\xE2\x80\x8A",   // HAIR SPACE
 
-        // Separador de palabras
-        "\xE2\x80\xAF",   // NARROW NO-BREAK SPACE (repetido intencionalmente si decides agrupar variantes)
-
         // Espacios matemáticos
         "\xE2\x81\x9F",   // MEDIUM MATHEMATICAL SPACE
 
@@ -382,7 +379,7 @@ abstract class Normalizer {
         /** @var int $bom_size */
         $bom_size = \strlen($bom);
 
-        while ($this->has_hext()) {
+        while ($this->has_next()) {
             /** @var non-empty-string */
             $byte = $this->consume();
 
@@ -474,7 +471,7 @@ abstract class Normalizer {
      *
      * @return bool true si hay bytes pendientes; false en caso contrario.
      */
-    private function has_hext(): bool {
+    private function has_next(): bool {
         return $this->cursor < $this->size;
     }
 
