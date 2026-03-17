@@ -558,8 +558,14 @@ abstract class Normalizer {
      * Devuelve el salto de línea determinado durante la instancia del normalizador
      *
      * @return string
+     * @throws NormalizerException
      */
     protected function get_break_line(): string {
+        
+        if ($this->break_line === null) {
+            throw new NormalizerException("No se pudo determinar el tipo de salto de líneas del documento. Ejecute el comando 'composer run document' para corregir el problema");
+        }
+
         return $this->break_line;
     }
 }
