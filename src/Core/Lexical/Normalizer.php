@@ -33,6 +33,27 @@ use DLParse\Exceptions\NormalizerException;
 abstract class Normalizer {
 
     /**
+     * Indica si deben colapsarse las líneas o no.
+     *
+     * @var boolean
+     */
+    private readonly bool $collapse_line;
+
+    /**
+     * Indica si deben colapsarse los espacios en blanco.
+     *
+     * @var boolean
+     */
+    private readonly bool $collapse_space;
+
+    /**
+     * Undocumented variable
+     *
+     * @var boolean
+     */
+    private readonly bool $normalize_space;
+
+    /**
      * Tamaño en bytes de la cadena original a normalizar.
      * 
      * @var int $size
@@ -233,8 +254,20 @@ abstract class Normalizer {
      */
     private ?string $break_line;
 
-    public function __construct(string $content, bool $collapse = false) {
-        $this->load_content($content, $collapse);
+    /**
+     * Permite crear una instancia con los parámetos ajustados a lo que quiere lograrse
+     *
+     * @param string $content Contenido a ser procesado
+     * @param boolean $normalize Indica si deben ser normalziados los espacios.
+     * @param boolean $collapse_line Indica si las líneas continuas deben ser colapsadas en una sola.
+     * @param boolean $collapse_space Indica si espacios continuos deben ser colapsados en uno solo espacio.
+     */
+    public function __construct(string $content, bool $normalize = false, bool $collapse_line = false, bool $collapse_space = false) {
+        $this->normalize_space = $normalize;    
+        $this->collapse_line = $collapse_line;
+        $this->collapse_space = $collapse_space;
+
+        $this->load_content($content);
     }
 
     /**
@@ -248,25 +281,13 @@ abstract class Normalizer {
      *    posicionado después de los BOM consecutivos.
      *
      * @param string $content Contenido crudo a cargar en el normalizador.
-     * @param bool $collapse Indica si los espacios en blanco consecutivos deben colapsarse a uno solo.
      * @return void
      */
-    private function load_content(string $content, bool $collapse = false): void {
+    private function load_content(string $content): void {
         $this->content = $content;
-        $this->collapse = $collapse;
+        $this->collapse = $this->collapse_space;
         $this->size = \strlen($this->content);
-
-        $this->determine_break_line();
-
-        if ($this->break_line === null) {
-            $this->normalize_content();
-            $this->break_line = self::LF;
-            return;
-        }
-
-        $collapse
-            ? $this->normalize_content()
-            : $this->remove_bom();
+        $this->normalize_content();
     }
 
     /**
@@ -277,7 +298,13 @@ abstract class Normalizer {
      */
     private function normalize_content(): void {
         $this->remove_bom();
+        $this->determine_break_line();
+        
+        if ($this->break_line !== null && !($this->normalize_space)) {
+            return;
+        }
 
+        /** @var array|non-empty-string|null */
         $content = preg_replace_callback(
             pattern: $this->get_white_space_pattern(),
             callback: $this->process_match(...),
@@ -361,7 +388,9 @@ abstract class Normalizer {
      * @return non-empty-string
      */
     private function get_white_space_pattern(): string {
-        return "/(?:" . implode("|", self::WHITE_SPACES) . ")+/";
+        return $this->collapse_space
+            ? "/(?:" . implode("|", self::WHITE_SPACES) . ")+/"
+            : "/(?:" . implode("|", self::WHITE_SPACES) . ")/";
     }
     
     /**
@@ -370,7 +399,9 @@ abstract class Normalizer {
      * @return non-empty-string
      */
     private function get_break_line_pattern(): string {
-        return "/(?:" . implode("|", self::BREAK_LINES) . ")+/";
+        return $this->collapse_line
+            ? "/(?:" . implode("|", self::BREAK_LINES) . ")+/"
+            : "/(?:" . implode("|", self::BREAK_LINES) . ")/";
     }
 
     /**
@@ -520,7 +551,7 @@ abstract class Normalizer {
      */
     protected function determine_break_line(): void {
         /** @var non-empty-string $bytes */
-        $bytes = substr("david", 0 -2);
+        $bytes = substr($this->normalized_content, 0 -2);
 
         if ($this->is_crlf($bytes)) {
             $this->break_line = self::CRLF;

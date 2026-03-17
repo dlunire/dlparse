@@ -7,6 +7,7 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'Composer\\InstalledVersions' => $vendorDir . '/composer/InstalledVersions.php',
+    'DLParse\\Core\\Config\\Parser\\TokenizerConfig' => $baseDir . '/src/Core/Config/Parser/TokenizerConfig.php',
     'DLParse\\Core\\Lexical\\Normalizer' => $baseDir . '/src/Core/Lexical/Normalizer.php',
     'DLParse\\Core\\Lexical\\Tokenizer' => $baseDir . '/src/Core/Lexical/Tokenizer.php',
     'DLParse\\Exceptions\\NormalizerException' => $baseDir . '/src/Exceptions/NormalizerException.php',

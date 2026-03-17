@@ -22,6 +22,7 @@ class ComposerStaticInitdad1d623852fc48124fe62b6b3aa1de0
 
     public static $classMap = array (
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
+        'DLParse\\Core\\Config\\Parser\\TokenizerConfig' => __DIR__ . '/../..' . '/src/Core/Config/Parser/TokenizerConfig.php',
         'DLParse\\Core\\Lexical\\Normalizer' => __DIR__ . '/../..' . '/src/Core/Lexical/Normalizer.php',
         'DLParse\\Core\\Lexical\\Tokenizer' => __DIR__ . '/../..' . '/src/Core/Lexical/Tokenizer.php',
         'DLParse\\Exceptions\\NormalizerException' => __DIR__ . '/../..' . '/src/Exceptions/NormalizerException.php',
