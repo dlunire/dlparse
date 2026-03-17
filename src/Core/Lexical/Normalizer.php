@@ -212,6 +212,27 @@ abstract class Normalizer {
      */
     private readonly bool $collapse;
 
+    /**
+     * Salto de línea de tipo Unix
+     * 
+     * @var non-empty-string
+     */
+    private const LF = "\x0A";
+
+    /**
+     * Salto de línea para sistemas que utilizan Windows
+     * 
+     * @var non-empty-string
+     */
+    private const CRLF = "\x0D\x0A";
+
+    /**
+     * Salto de línea determinado durante la lectura.
+     *
+     * @var non-empty-string|null
+     */
+    private readonly ?string $break_line;
+
     public function __construct(string $content, bool $collapse = false) {
         $this->load_content($content, $collapse);
     }
@@ -235,6 +256,8 @@ abstract class Normalizer {
         $this->collapse = $collapse;
         $this->size = \strlen($this->content);
 
+        $this->determine_break_line();
+        
         $collapse
             ? $this->normalize_content()
             : $this->remove_bom();
@@ -482,5 +505,40 @@ abstract class Normalizer {
      */
     protected function get_normalized_content(): string {
         return $this->normalized_content;
+    }
+
+    /**
+     * Devuelve el salto de línea que se está utilizando en el documento a ser analizado.
+     *
+     * @return string
+     */
+    protected function determine_break_line(): void {
+        /** @var non-empty-string $bytes */
+        $bytes = substr("david", 0 -2);
+
+        if ($this->is_crlf($bytes)) {
+            $this->break_line = self::CRLF;
+            return;
+        }
+
+        if ($this->is_lf($bytes[1] ?? '')) {
+            $this->break_line = self::LF;
+            return;
+        }
+
+        $this->break_line = null;
+    }
+
+    /**
+     * Determina si el salto de línea es 
+     *
+     * @return boolean
+     */
+    private function is_crlf(string $bytes): bool {
+        return $bytes === self::CRLF;
+    }
+
+    private function is_lf(string $byte): bool {
+        return $byte === self::LF;
     }
 }
