@@ -231,7 +231,7 @@ abstract class Normalizer {
      *
      * @var non-empty-string|null
      */
-    private readonly ?string $break_line;
+    private ?string $break_line;
 
     public function __construct(string $content, bool $collapse = false) {
         $this->load_content($content, $collapse);
@@ -257,7 +257,13 @@ abstract class Normalizer {
         $this->size = \strlen($this->content);
 
         $this->determine_break_line();
-        
+
+        if ($this->break_line === null) {
+            $this->normalize_content();
+            $this->break_line = self::LF;
+            return;
+        }
+
         $collapse
             ? $this->normalize_content()
             : $this->remove_bom();
@@ -538,7 +544,22 @@ abstract class Normalizer {
         return $bytes === self::CRLF;
     }
 
+    /**
+     * Determina si el salto de línea corresponde a sistemas Unix
+     *
+     * @param string $byte byte a ser evaluado.
+     * @return boolean
+     */
     private function is_lf(string $byte): bool {
         return $byte === self::LF;
+    }
+
+    /**
+     * Devuelve el salto de línea determinado durante la instancia del normalizador
+     *
+     * @return string
+     */
+    protected function get_break_line(): string {
+        return $this->break_line;
     }
 }
