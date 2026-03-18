@@ -308,6 +308,7 @@ abstract class Normalizer {
         $this->determine_break_line();
         
         if ($this->break_line !== null && !($this->normalize_space)) {
+            $this->normalized_content .= self::LF;
             $this->processed_content_size = \strlen($this->normalized_content);
             return;
         }
@@ -334,7 +335,10 @@ abstract class Normalizer {
         }
 
         $this->normalized_content = $this->trim($content);
+        $this->normalized_content .= self::LF;
         $this->processed_content_size = \strlen($this->normalized_content);
+
+
     }
 
     /**
