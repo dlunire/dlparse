@@ -52,6 +52,7 @@ final class Normalizer extends BaseNormalizer {
      * - collapse_space: true
      *
      * @param string $content Contenido bruto a normalizar.
+     * @param Config $config Configuración del comportamiento del CLI en la línea de comando.
      */
     public function __construct(string $content, Config $config) {
 
