@@ -61,6 +61,13 @@ abstract class Normalizer {
     private readonly int $size;
 
     /**
+     * Tamañao del contenido procesado
+     *
+     * @var integer
+     */
+    private readonly int $processed_content_size;
+
+    /**
      * Contenido original a ser analizado
      *
      * @var string
@@ -301,6 +308,7 @@ abstract class Normalizer {
         $this->determine_break_line();
         
         if ($this->break_line !== null && !($this->normalize_space)) {
+            $this->processed_content_size = \strlen($this->normalized_content);
             return;
         }
 
@@ -326,6 +334,7 @@ abstract class Normalizer {
         }
 
         $this->normalized_content = $this->trim($content);
+        $this->processed_content_size = \strlen($this->normalized_content);
     }
 
     /**
@@ -598,5 +607,23 @@ abstract class Normalizer {
         }
 
         return $this->break_line;
+    }
+
+    /**
+     * Devuelve el tamaño en byte del contenido original
+     *
+     * @return integer
+     */
+    public function get_size(): int {
+        return $this->size;
+    }
+
+    /**
+     * Devuelve el tamaño en byte del contenido procesado.
+     *
+     * @return integer
+     */
+    public function get_processed_size(): int {
+        return $this->size;
     }
 }
