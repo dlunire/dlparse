@@ -624,6 +624,6 @@ abstract class Normalizer {
      * @return integer
      */
     public function get_processed_size(): int {
-        return $this->size;
+        return $this->processed_content_size;
     }
 }

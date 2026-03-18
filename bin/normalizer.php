@@ -1,21 +1,68 @@
 <?php
 declare(strict_types=1);
 
+/**
+ * Copyright (c) 2026 David E Luna M
+ * Licensed under the MIT License. See LICENSE file for details.
+ */
+
 require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . "vendor" . DIRECTORY_SEPARATOR . "autoload.php";
 
 use DLParse\Core\Lexical\Normalizer as BaseNormalizer;
 use DLParse\Exceptions\NormalizerException;
 
+/**
+ * Class Normalizer
+ *
+ * Especialización de la lógica de saneamiento de datos orientada a la
+ * persistencia de documentos estructurados. Esta clase actúa como la
+ * interfaz final para la transformación de flujos de texto crudo en
+ * información procesable y normalizada.
+ *
+ * Responsabilidades:
+ * - Eliminación de BOM (Byte Order Mark).
+ * - Eliminación de bytes nulos.
+ * - Colapso de espacios redundantes.
+ * - Garantía de consistencia del contenido antes de persistencia.
+ *
+ * Características de diseño:
+ * - Inmutabilidad del proceso de saneamiento.
+ * - Encapsulación de la configuración de normalización.
+ * - Especialización sobre BaseNormalizer.
+ *
+ * @version v0.0.1
+ * @package DLParse\Core\Lexical
+ * @license MIT
+ * @author David E Luna M
+ * @copyright Copyright (c) 2026
+ *
+ * @final No permite extensión para garantizar consistencia del pipeline de saneamiento.
+ *
+ * @extends BaseNormalizer
+ */
 final class Normalizer extends BaseNormalizer {
 
+    /**
+     * Constructor de la clase Normalizer.
+     *
+     * Inicializa el proceso de normalización con las opciones obligatorias:
+     * - normalize: true
+     * - collapse_space: true
+     *
+     * @param string $content Contenido bruto a normalizar.
+     */
     public function __construct(string $content) {
-        parent::__construct($content, true);
+        parent::__construct(content: $content, normalize: true, collapse_space: true);
     }
 
     /**
-     * Devuelve el contenido normalizado
+     * Persiste el contenido normalizado en un archivo.
      *
-     * @param string $filename Archivo a ser almacenado.
+     * Este método actúa como punto final del pipeline de saneamiento,
+     * escribiendo el contenido procesado en el sistema de archivos.
+     *
+     * @param string $filename Ruta del archivo destino.
+     *
      * @return void
      */
     public function format_document(string $filename): void {
@@ -23,16 +70,42 @@ final class Normalizer extends BaseNormalizer {
     }
 }
 
+/**
+ * Class Filename
+ *
+ * Responsable de la resolución del nombre de archivo y la obtención
+ * de su contenido desde el entorno CLI.
+ *
+ * Responsabilidades:
+ * - Extraer argumentos desde `$argv`.
+ * - Validar existencia del nombre de archivo.
+ * - Validar existencia física del archivo.
+ * - Obtener el contenido del archivo.
+ *
+ * Consideraciones:
+ * - Diseñada para ejecución en entorno CLI.
+ * - No mantiene estado (totalmente estática).
+ * - Centraliza validaciones de entrada/salida.
+ *
+ * @version v0.0.1
+ * @package DLParse\Core\Lexical
+ * @license MIT
+ * @author David E Luna M
+ * @copyright Copyright (c) 2026
+ *
+ * @final Clase utilitaria estática.
+ */
 final class Filename {
 
-    // public static function 
-
     /**
-     * Devuelve el nombre de archivo
+     * Obtiene el nombre de archivo desde los argumentos CLI.
      *
-     * @return string
+     * @throws NormalizerException Si el argumento no está definido o es vacío.
+     *
+     * @return string Nombre del archivo.
      */
     public static function get_filename(): string {
+        global $argv;
 
         /** @var string|null $filename */
         $filename = $argv[1] ?? null;
@@ -45,23 +118,30 @@ final class Filename {
     }
 
     /**
-     * Devuelve el contenido del archivo seleccionado.
+     * Obtiene el contenido del archivo especificado.
      *
-     * @return string
+     * Flujo:
+     * 1. Obtiene el nombre del archivo.
+     * 2. Verifica su existencia.
+     * 3. Lee su contenido.
+     *
+     * @throws NormalizerException Si el archivo no existe.
+     *
+     * @return string Contenido del archivo. Retorna string vacío si la lectura falla.
      */
     public static function get_content(): string {
 
-        /** @var non-empty-string */
+        /** @var non-empty-string $filename */
         $filename = self::get_filename();
 
         if (!file_exists($filename)) {
             throw new NormalizerException("El archivo que intenta corregir no existe", 404);
         }
 
-        /** @var bool|string */
+        /** @var string|false $content */
         $content = file_get_contents($filename);
 
-        if ($content === FALSE) {
+        if ($content === false) {
             return "";
         }
 
@@ -69,10 +149,20 @@ final class Filename {
     }
 }
 
+/**
+ * Punto de entrada del proceso de normalización.
+ *
+ * Flujo de ejecución:
+ * 1. Obtiene el contenido del archivo desde CLI.
+ * 2. Instancia el normalizador.
+ * 3. Sobrescribe el archivo con su versión normalizada.
+ */
+
+// Obtención del contenido
 $content = Filename::get_content();
 
+// Inicialización del normalizador
 $normalizer = new Normalizer($content);
-$normalizer->format_document(Filename::get_filename());
 
-print_r($argv);
-exit;
+// Persistencia del contenido normalizado
+$normalizer->format_document(Filename::get_filename());
