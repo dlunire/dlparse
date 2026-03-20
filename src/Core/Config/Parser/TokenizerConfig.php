@@ -36,6 +36,11 @@ abstract class TokenizerConfig extends Normalizer {
     /** @var string[] Identificadores */
     private array $identifiers = [];
 
+    /**
+     * Contenido a ser cargado
+     *
+     * @var string
+     */
     private readonly string $content;
 
     /** @var int $line */
@@ -44,11 +49,16 @@ abstract class TokenizerConfig extends Normalizer {
     /** @var int $column */
     private int $column = 1;
 
-    public function __construct(string $content, bool $collapse = true) {
-        parent::__construct($content, $collapse);
+    public function __construct(string $content, bool $normalize = false) {
+        parent::__construct($content, $normalize);
         $this->load_content();
     }
 
+    /**
+     * Carga el contenido a ser parseado
+     *
+     * @return void
+     */
     private function load_content(): void {
         $this->content = $this->get_normalized_content();
     }
