@@ -31,10 +31,20 @@ namespace DLParse\Core\Config\Parser;
 use DLParse\Core\Lexical\Normalizer;
 use DLParse\Exceptions\TokenizerException;
 
+/**
+ * Generador de tokens base para DL Typed Environment
+ * 
+ * @package DLParse\Core\Config\Parser
+ * 
+ * @version v0.0.1 (release)
+ * @author David E Luna M <dlunireframework@gmail.com>
+ * @copyright (c) 2026 David E Luna M
+ * @license MIT
+ */
 abstract class TokenizerConfig extends Normalizer {
 
-    /** @var string[] Identificadores */
-    private array $identifiers = [];
+    /** @var TokenConfig[] tokens */
+    private array $tokens = [];
 
     /**
      * Contenido a ser cargado
@@ -103,6 +113,7 @@ abstract class TokenizerConfig extends Normalizer {
 
         ++$this->line;
         $this->reset_column();
+        
     }
 
     /**
