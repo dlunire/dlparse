@@ -43,7 +43,7 @@ use DLParse\Exceptions\TokenizerException;
  */
 abstract class TokenizerConfig extends Normalizer {
 
-    /** @var TokenConfig[] tokens */
+    /** @var Lexeme[] tokens */
     private array $tokens = [];
 
     /**
@@ -113,7 +113,7 @@ abstract class TokenizerConfig extends Normalizer {
 
         ++$this->line;
         $this->reset_column();
-        
+
     }
 
     /**

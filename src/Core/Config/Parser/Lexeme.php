@@ -30,6 +30,7 @@ use DLParse\Exceptions\TokenizerException;
  * @property-read int $line Número de línea donde se emitió el token.
  * @property-read int $column Número de columna donde se emitió el token.
  * @property-read int $offset Posición absoluta del cursor en el flujo de entrada.
+ * @property-read int $length Tamaño del contenido del token
  */
 final class Lexeme {
 
@@ -81,6 +82,13 @@ final class Lexeme {
      * @var int
      */
     public readonly int $offset;
+
+    /**
+     * Tamaño en bytes del token
+     *
+     * @var integer
+     */
+    public readonly int $length;
 
     /**
      * Asegura que la unidad léxica no haya sido sellada antes de una modificación.
@@ -181,6 +189,7 @@ final class Lexeme {
      */
     public function seal(): self {
         $this->sealed = true;
+        $this->length = \strlen($this->content);
         return $this;
     }
 }
