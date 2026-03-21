@@ -98,8 +98,8 @@ abstract class TokenizerConfig extends Normalizer {
         if ($length !== 1) {
             throw new TokenizerException(
                 \sprintf(
-                    'Longitud inválida del terminador de línea: se esperaba exactamente 1 byte, se recibieron %d bytes.',
-                    $length
+                    format: 'Longitud inválida del terminador de línea: se esperaba exactamente 1 byte, se recibieron %d bytes.',
+                    values: $length
                 )
             );
         }
