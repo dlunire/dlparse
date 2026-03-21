@@ -119,7 +119,7 @@ final class Lexeme {
      * @param string $lexeme Fragmento del flujo de entrada asociado al token.
      * @return self
      */
-    public function set_lexeme(string $lexeme): self {
+    public function set_content(string $lexeme): self {
         $this->assert_not_sealed();
         $this->content = $lexeme;
         return $this;
@@ -188,8 +188,20 @@ final class Lexeme {
      * @return self Retorna la instancia actual sellada para encadenamiento de métodos (fluent interface).
      */
     public function seal(): self {
+        $this->assert_complete();
         $this->sealed = true;
         $this->length = \strlen($this->content);
         return $this;
+    }
+
+    /**
+     * Verifica que todas las propiedades se hayan cargado
+     *
+     * @return void
+     */
+    private function assert_complete(): void {
+        if (!isset($this->content, $this->type, $this->line, $this->column, $this->offset)) {
+            throw new TokenizerException("Lexeme incompleto antes de sellar.");
+        }
     }
 }
