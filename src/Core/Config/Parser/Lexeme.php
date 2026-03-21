@@ -10,7 +10,7 @@ use DLParse\Exceptions\TokenizerException;
  * Copyright (c) 2026 David E Luna M
  * Licensed under the MIT License. See LICENSE file for details.
  *
- * Class TokenConfig
+ * Class Lexeme
  *
  * Representa la configuración estructural de un token generado durante la fase de análisis léxico.
  *
@@ -25,7 +25,7 @@ use DLParse\Exceptions\TokenizerException;
  * @author David E Luna M
  * @license MIT
  *
- * @property-read string $lexeme Contenido textual exacto extraído del flujo de entrada.
+ * @property-read string $content Contenido textual exacto extraído del flujo de entrada.
  * @property-read string $type Tipo sintáctico del token (clasificación léxica).
  * @property-read int $line Número de línea donde se emitió el token.
  * @property-read int $column Número de columna donde se emitió el token.
@@ -52,7 +52,7 @@ final class Lexeme {
      *
      * @var string
      */
-    public readonly string $lexeme;
+    public readonly string $content;
 
     /**
      * Tipo sintáctico del token, definido por el conjunto de reglas léxicas.
@@ -113,7 +113,7 @@ final class Lexeme {
      */
     public function set_lexeme(string $lexeme): self {
         $this->assert_not_sealed();
-        $this->lexeme = $lexeme;
+        $this->content = $lexeme;
         return $this;
     }
 
