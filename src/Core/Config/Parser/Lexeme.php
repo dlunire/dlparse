@@ -80,11 +80,11 @@ final class Lexeme {
      *
      * Este valor corresponde a la secuencia exacta de caracteres reconocida por el lexer.
      *
-     * @param string $lexeme Fragmento del flujo de entrada asociado al token.
+     * @param string $content Fragmento del flujo de entrada asociado al token.
      * @return self
      */
-    public function set_content(string $lexeme): self {
-        $this->content = $lexeme;
+    public function set_content(string $content): self {
+        $this->content = $content;
         return $this;
     }
 
