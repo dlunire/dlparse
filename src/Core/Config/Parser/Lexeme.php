@@ -33,21 +33,6 @@ use DLParse\Exceptions\TokenizerException;
  * @property-read int $length Tamaño del contenido del token
  */
 final class Lexeme {
-
-    /**
-     * Indica si la instancia ha sido sellada (inmutabilizada).
-     *
-     * Una vez establecido en `true`, el token se considera completamente
-     * construido y no permite modificaciones adicionales en sus propiedades.
-     *
-     * Este mecanismo define explícitamente la transición de un estado mutable
-     * (fase de construcción durante la tokenización) a un estado inmutable
-     * (token emitido listo para consumo por el parser).
-     *
-     * @var bool
-     */
-    private bool $sealed = false;
-
     /**
      * Contenido textual exacto del token tal como fue reconocido por el analizador léxico.
      *
@@ -91,27 +76,6 @@ final class Lexeme {
     public readonly int $length;
 
     /**
-     * Asegura que la unidad léxica no haya sido sellada antes de una modificación.
-     *
-     * Este guardián de integridad verifica que la instancia se encuentre aún en su
-     * fase mutable de construcción. Si el lexema ya ha sido sellado (`sealed`), 
-     * se prohíbe cualquier cambio posterior para garantizar la inmutabilidad de 
-     * los metadatos (lexema, tipo y posición) durante el análisis sintáctico.
-     *
-     * @throws TokenizerException Si se intenta modificar una propiedad de un 
-     *                            lexema que ya ha sido marcado como inmutable.
-     * @return void
-     */
-    private function assert_not_sealed(): void {
-        if ($this->sealed) {
-            throw new TokenizerException(
-                "Error de integridad: No se puede modificar un Lexeme que ya ha sido sellado. La instancia es inmutable una vez emitida para su procesamiento en el Parser."
-            );
-        }
-    }
-
-
-    /**
      * Establece el lexema del token.
      *
      * Este valor corresponde a la secuencia exacta de caracteres reconocida por el lexer.
@@ -120,7 +84,6 @@ final class Lexeme {
      * @return self
      */
     public function set_content(string $lexeme): self {
-        $this->assert_not_sealed();
         $this->content = $lexeme;
         return $this;
     }
@@ -134,7 +97,6 @@ final class Lexeme {
      * @return self
      */
     public function set_type(string $type): self {
-        $this->assert_not_sealed();
         $this->type = $type;
         return $this;
     }
@@ -146,7 +108,6 @@ final class Lexeme {
      * @return self
      */
     public function set_line(int $line): self {
-        $this->assert_not_sealed();
         $this->line = $line;
         return $this;
     }
@@ -158,7 +119,6 @@ final class Lexeme {
      * @return self
      */
     public function set_column(int $column): self {
-        $this->assert_not_sealed();
         $this->column = $column;
         return $this;
     }
@@ -172,35 +132,20 @@ final class Lexeme {
      * @return self
      */
     public function set_offset(int $offset): self {
-        $this->assert_not_sealed();
         $this->offset = $offset;
         return $this;
     }
 
     /**
-     * Sella la instancia actual del lexema para garantizar su inmutabilidad.
-     *
-     * Al invocar este método, el lexema transita de un estado mutable (fase de construcción
-     * en el Lexer) a un estado inmutable (listo para consumo por el Parser). Una vez sellado,
-     * la lógica de integridad impedirá cualquier modificación posterior, asegurando que 
-     * los metadatos de posición y valor permanezcan consistentes durante todo el análisis.
-     *
-     * @return self Retorna la instancia actual sellada para encadenamiento de métodos (fluent interface).
-     */
-    public function seal(): self {
-        $this->assert_complete();
-        $this->sealed = true;
-        $this->length = \strlen($this->content);
-        return $this;
-    }
-
-    /**
-     * Verifica que todas las propiedades se hayan cargado
+     * Verifica que todas las propiedades se hayan cargado correctamente
      *
      * @return void
      */
-    private function assert_complete(): void {
-        if (!isset($this->content, $this->type, $this->line, $this->column, $this->offset)) {
+    public function assert_complete(): void {
+        /** @var bool $completed */
+        $completed = isset($this->content, $this->type, $this->line, $this->column, $this->offset);
+
+        if (!$completed) {
             throw new TokenizerException("Lexeme incompleto antes de sellar.");
         }
     }
