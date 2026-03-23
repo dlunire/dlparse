@@ -43,6 +43,27 @@ use DLParse\Exceptions\TokenizerException;
  */
 abstract class TokenizerConfig extends Normalizer {
 
+    /**
+     * Delimitador de anotación de tipo
+     * 
+     * @var non-empty-string
+     */
+    private const COLON = "\x3a";
+
+    /**
+     * Operaor de asignación
+     * 
+     * @var non-empty-string
+     */
+    private const ASSIGN = "\x3d";
+
+    /**
+     * Token inicial esperado
+     *
+     * @var TokenType
+     */
+    private TokenType $tokentype = TokenType::IDENTIFIER;
+
     /** @var Lexeme[] tokens */
     private array $tokens = [];
 
@@ -65,6 +86,26 @@ abstract class TokenizerConfig extends Normalizer {
      * @var integer
      */
     private int $offset = 0;
+
+    /**
+     * Longitud del lexema actualmente en construcción.
+     *
+     * Representa la cantidad de símbolos consumidos desde el inicio del
+     * reconocimiento del token actual. Este contador se incrementa conforme
+     * el autómata avanza sobre la entrada y forma parte del proceso de
+     * acumulación del lexema.
+     *
+     * Su valor se reinicia inmediatamente después de emitir un token,
+     * marcando el inicio de un nuevo proceso de reconocimiento léxico.
+     *
+     * En términos formales, corresponde a:
+     * length = |lexeme|
+     *
+     * donde `lexeme` es la secuencia de símbolos reconocida para el token en curso
+     *
+     * @var int
+     */
+    private int $length = 0;
 
     public function __construct(string $content, bool $normalize = false) {
         parent::__construct($content, $normalize);
@@ -186,10 +227,75 @@ abstract class TokenizerConfig extends Normalizer {
     public function test(): void {
         $buffer = [];
 
+        /** @var int|null $offset */
+        $offset = null;
+
+        /** @var int|null $column */
+        $column = null;
+
         while ($this->has_next()) {
-            $buffer[] = bin2hex($this->consume_byte());
+            /** @var string $value */
+            $value = $this->consume_byte();
+
+            if ($offset === null) {
+                $offset = $this->offset;
+            }
+
+            if ($column === null) {
+                $column = $this->column;
+            }
+
+            $this->emit_token_identifier($value, $offset, $column);
         }
 
-        print_r($buffer);
+        print_r($this->tokens);
+    }
+
+    /**
+     * Emite el token correspondiente al identificador
+     *
+     * @param string $byte Byte a evaluar
+     * @param integer|null $offset Posición del offset desde donde comienza el identificador.
+     * @param integer|null $column Columna desde donde empezó el identificador.
+     * @return void
+     */
+    private function emit_token_identifier(string &$byte, ?int &$offset = null, ?int &$column = null): void {
+
+        /** @var bool $toketype */
+        $tokentype = $this->tokentype === TokenType::IDENTIFIER
+            && $byte === self::COLON
+            && $offset !== null
+            && $column !== null
+            && $byte !== $this->determine_break_line();
+
+            if (!$tokentype) {
+                return;
+            }
+
+        /** @var non-empty-string $content */
+        $content = substr(
+            string: $this->get_normalized_content(),
+            offset: $offset ?? 0,
+            length: $this->offset - 2
+        );
+
+        /** @var Lexeme $lexeme */
+        $lexeme = new Lexeme();
+
+        $this->tokens[] = $lexeme->set_column($column)
+            ->set_line($this->line)
+            ->set_content($content)
+            ->set_type(TokenType::IDENTIFIER)
+            ->set_offset($this->offset)
+            ->assert_complete();
+
+        $offset = null;
+        $column = null;
+
+        $this->tokentype = TokenType::COLON;
+    }
+
+    private function emit_token_colon(string &$byte): void {
+
     }
 }

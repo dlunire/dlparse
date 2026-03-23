@@ -64,7 +64,7 @@ enum TokenType: int {
      *
      * @var int
      */
-    case COLUMN = 2;
+    case COLON = 2;
 
     /**
      * Operador de asignación.
@@ -82,7 +82,32 @@ enum TokenType: int {
      *
      * @var int
      */
-    case ASSIGN = 3;
+
+    /**
+     * Representa el tipo declarado en una anotación de tipo.
+     *
+     * Corresponde a la secuencia de símbolos que define el tipo asociado
+     * a un identificador dentro de una construcción del tipo:
+     *
+     * IDENTIFIER: type
+     *
+     * Este token es reconocido después del delimitador `:` y antes del
+     * operador de asignación `=` (si existe), formando parte de la fase
+     * de declaración dentro del autómata.
+     *
+     * Formalmente:
+     * TYPE ∈ Σ⁺ sujeto a las reglas de formación del sistema de tipos
+     * definido por el lenguaje (tipos primitivos, compuestos, alias, etc.).
+     *
+     * Nota:
+     * La validación semántica del TYPE (existencia, compatibilidad, etc.)
+     * no corresponde al análisis léxico, sino a fases posteriores.
+     *
+     * @var int
+     */
+    case TYPE = 3;
+
+    case ASSIGN = 4;
 
     /**
      * Representa el valor asociado a un identificador.

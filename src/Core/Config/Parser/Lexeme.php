@@ -45,7 +45,7 @@ final class Lexeme {
      *
      * @var string
      */
-    public readonly int $type;
+    public readonly TokenType $type;
 
     /**
      * Número de línea en el flujo de entrada donde se emitió el token.
@@ -93,10 +93,10 @@ final class Lexeme {
      *
      * Este valor es utilizado por el parser para determinar la producción gramatical aplicable.
      *
-     * @param int $type Identificador del tipo de token.
+     * @param TokenType $type Identificador del tipo de token.
      * @return self
      */
-    public function set_type(int $type): self {
+    public function set_type(TokenType $type): self {
         $this->type = $type;
         return $this;
     }
@@ -139,14 +139,16 @@ final class Lexeme {
     /**
      * Verifica que todas las propiedades se hayan cargado correctamente
      *
-     * @return void
+     * @return self
      */
-    public function assert_complete(): void {
+    public function assert_complete(): self {
         /** @var bool $completed */
         $completed = isset($this->content, $this->type, $this->line, $this->column, $this->offset);
 
         if (!$completed) {
             throw new TokenizerException("Lexeme incompleto antes de sellar.");
         }
+
+        return $this;
     }
 }

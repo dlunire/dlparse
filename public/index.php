@@ -16,7 +16,7 @@ class Test extends TokenizerConfig {
 
 /** @var non-empty-string $content */
 $content = <<<EOT
-# Indica si la aplicación debe correr o no en producción:
+# Indica si la aplicación debe correr o no en producción - Esa es otra prueba:
 DL_PRODUCTION: boolean = false
 
 
@@ -106,8 +106,8 @@ UUID: uuid = c61cc834-5957-11ee-9db5-0023ae88eef0
  */
 EOT;
 
-$content = "IDENTIFICADOR: tipo = value\x0aOTRO_IDENTIFICADOR: tipo = value";
+// $content = "IDENTIFICADOR: tipo = value\x0aOTRO_IDENTIFICADOR: tipo = \"otro valor\"";
 
 $test = new Test($content);
 
-echo $test->test();
+$test->test();
