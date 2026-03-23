@@ -45,7 +45,7 @@ final class Lexeme {
      *
      * @var string
      */
-    public readonly string $type;
+    public readonly int $type;
 
     /**
      * Número de línea en el flujo de entrada donde se emitió el token.
@@ -93,10 +93,10 @@ final class Lexeme {
      *
      * Este valor es utilizado por el parser para determinar la producción gramatical aplicable.
      *
-     * @param string $type Identificador del tipo de token.
+     * @param int $type Identificador del tipo de token.
      * @return self
      */
-    public function set_type(string $type): self {
+    public function set_type(int $type): self {
         $this->type = $type;
         return $this;
     }

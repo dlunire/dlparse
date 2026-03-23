@@ -2,20 +2,15 @@
 declare(strict_types=1);
 ini_set('display_errors', 1);
 
-
+use DLParse\Core\Config\Parser\TokenizerConfig;
 use DLParse\Core\Lexical\Tokenizer;
 
 require_once dirname(__DIR__) . "/vendor/autoload.php";
 
-class Test extends Tokenizer {
+class Test extends TokenizerConfig {
 
     public function __construct(string $content) {
         parent::__construct($content, false);
-    }
-
-    public function test(): string {
-        header("content-type: text/plain; charset=utf-8", true, 200);
-        return $this->get_normalized_content();
     }
 }
 
@@ -110,6 +105,8 @@ UUID: uuid = c61cc834-5957-11ee-9db5-0023ae88eef0
  *
  */
 EOT;
+
+$content = "IDENTIFICADOR: tipo = value\x0aOTRO_IDENTIFICADOR: tipo = value";
 
 $test = new Test($content);
 

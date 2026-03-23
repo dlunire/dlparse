@@ -162,4 +162,34 @@ abstract class TokenizerConfig extends Normalizer {
     private function consume_byte(): string {
         return $this->input[$this->offset++];
     }
+
+    /**
+     * Determina si existe un símbolo siguiente en la secuencia de entrada,
+     * permitiendo una transición válida del autómata.
+     *
+     * Este método evalúa si el cursor actual ($offset) aún se encuentra dentro
+     * de los límites de la cadena procesada, modelando así la posibilidad de
+     * consumir un nuevo símbolo desde la "cinta de entrada".
+     *
+     * En términos formales, representa la condición:
+     * offset < |input|
+     *
+     * Donde |input| corresponde al tamaño total de la entrada procesada.
+     *
+     * @return bool `true` si el autómata puede avanzar al siguiente símbolo;
+     *              `false` si se ha alcanzado el final de la entrada.
+     */
+    private function has_next(): bool {
+        return $this->offset < $this->get_processed_size();
+    }
+
+    public function test(): void {
+        $buffer = [];
+
+        while ($this->has_next()) {
+            $buffer[] = bin2hex($this->consume_byte());
+        }
+
+        print_r($buffer);
+    }
 }
