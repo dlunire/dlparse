@@ -51,13 +51,20 @@ abstract class TokenizerConfig extends Normalizer {
      *
      * @var string
      */
-    private readonly string $content;
+    private readonly string $input;
 
     /** @var int $line */
     private int $line = 1;
 
     /** @var int $column */
     private int $column = 1;
+
+    /**
+     * Offset o cursor actual del byte
+     *
+     * @var integer
+     */
+    private int $offset = 0;
 
     public function __construct(string $content, bool $normalize = false) {
         parent::__construct($content, $normalize);
@@ -70,7 +77,7 @@ abstract class TokenizerConfig extends Normalizer {
      * @return void
      */
     private function load_content(): void {
-        $this->content = $this->get_normalized_content();
+        $this->input = $this->get_normalized_content();
     }
 
     /**
@@ -147,5 +154,12 @@ abstract class TokenizerConfig extends Normalizer {
         $this->column = 1;
     }
 
-    
+    /**
+     * Devuelve cada un byte en cada iteración
+     *
+     * @return non-empty-string
+     */
+    private function consume_byte(): string {
+        return $this->input[$this->offset++];
+    }
 }
