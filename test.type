@@ -1,0 +1,9 @@
+/** @var Lexeme $lexeme */
+# $lexeme = new Lexeme(
+#     lexeme_content: $content,
+#     tokentype: TokenType::IDENTIFIER,
+#     line: $this->line,
+#     column: $column,
+#     offset: $this->offset,
+#     length: $this->length
+# );

@@ -58,6 +58,34 @@ abstract class TokenizerConfig extends Normalizer {
     private const ASSIGN = "\x3d";
 
     /**
+     * Comentario con apertura `#`
+     * 
+     * @var non-empty-string
+     */
+    private const HASH_LINE_COMMENT = "\x23";
+
+    /**
+     * Comentario de una sola línea
+     * 
+     * @var non-empty-string
+     */
+    private const LINE_COMMENT = "\x2f\x2f";
+
+    /**
+     * Comentario de bloque de apertura
+     * 
+     * @var non-empty-string
+     */
+    private const OPEN_BLOCK_COMMENT = "\x2f\x2a";
+
+    /**
+     * Cierre de comentario de bloque
+     * 
+     * @var non-empty-string
+     */
+    private const CLOSE_BLOCK_COMMENT = "\x2a\x2f";
+
+    /**
      * Token inicial esperado
      *
      * @var TokenType
@@ -224,7 +252,12 @@ abstract class TokenizerConfig extends Normalizer {
         return $this->offset < $this->get_processed_size();
     }
 
-    public function test(): void {
+    /**
+     * Tokenizador
+     *
+     * @return void
+     */
+    public function tokenize(): void {
         $buffer = [];
 
         /** @var int|null $offset */
@@ -234,8 +267,8 @@ abstract class TokenizerConfig extends Normalizer {
         $column = null;
 
         while ($this->has_next()) {
-            /** @var string $value */
-            $value = $this->consume_byte();
+            /** @var string $byte */
+            $byte = $this->consume_byte();
 
             if ($offset === null) {
                 $offset = $this->offset;
@@ -245,7 +278,7 @@ abstract class TokenizerConfig extends Normalizer {
                 $column = $this->column;
             }
 
-            $this->emit_token_identifier($value, $offset, $column);
+            $this->emit_token_identifier($byte, $offset, $column);
         }
 
         print_r($this->tokens);
@@ -260,39 +293,7 @@ abstract class TokenizerConfig extends Normalizer {
      * @return void
      */
     private function emit_token_identifier(string &$byte, ?int &$offset = null, ?int &$column = null): void {
-
-        /** @var bool $toketype */
-        $tokentype = $this->tokentype === TokenType::IDENTIFIER
-            && $byte === self::COLON
-            && $offset !== null
-            && $column !== null
-            && $byte !== $this->determine_break_line();
-
-            if (!$tokentype) {
-                return;
-            }
-
-        /** @var non-empty-string $content */
-        $content = substr(
-            string: $this->get_normalized_content(),
-            offset: $offset ?? 0,
-            length: $this->offset - 2
-        );
-
-        /** @var Lexeme $lexeme */
-        $lexeme = new Lexeme();
-
-        $this->tokens[] = $lexeme->set_column($column)
-            ->set_line($this->line)
-            ->set_content($content)
-            ->set_type(TokenType::IDENTIFIER)
-            ->set_offset($this->offset)
-            ->assert_complete();
-
-        $offset = null;
-        $column = null;
-
-        $this->tokentype = TokenType::COLON;
+        
     }
 
     private function emit_token_colon(string &$byte): void {

@@ -110,4 +110,4 @@ EOT;
 
 $test = new Test($content);
 
-$test->test();
+$test->tokenize();
