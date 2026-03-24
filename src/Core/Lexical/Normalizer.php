@@ -245,14 +245,14 @@ abstract class Normalizer {
      * 
      * @var non-empty-string
      */
-    private const LF = "\x0A";
+    protected const LF = "\x0A";
 
     /**
      * Salto de línea para sistemas que utilizan Windows
      * 
      * @var non-empty-string
      */
-    private const CRLF = "\x0D\x0A";
+    protected const CRLF = "\x0D\x0A";
 
     /**
      * Salto de línea determinado durante la lectura.

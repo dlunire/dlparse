@@ -2,12 +2,12 @@
 declare(strict_types=1);
 ini_set('display_errors', 1);
 
-use DLParse\Core\Config\Parser\TokenizerConfig;
+use DLParse\Core\Config\Parser\TypedEnvironmentLexer;
 use DLParse\Core\Lexical\Tokenizer;
 
 require_once dirname(__DIR__) . "/vendor/autoload.php";
 
-class Test extends TokenizerConfig {
+class Test extends TypedEnvironmentLexer {
 
     public function __construct(string $content) {
         parent::__construct($content, false);

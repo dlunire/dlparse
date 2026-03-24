@@ -41,7 +41,7 @@ use DLParse\Exceptions\TokenizerException;
  * @copyright (c) 2026 David E Luna M
  * @license MIT
  */
-abstract class TokenizerConfig extends Normalizer {
+abstract class TypedEnvironmentLexer extends Normalizer {
 
     /**
      * Delimitador de anotación de tipo
@@ -95,6 +95,8 @@ abstract class TokenizerConfig extends Normalizer {
     /** @var Lexeme[] tokens */
     private array $tokens = [];
 
+    // private string 
+
     /**
      * Contenido a ser cargado
      *
@@ -134,6 +136,28 @@ abstract class TokenizerConfig extends Normalizer {
      * @var int
      */
     private int $length = 0;
+
+    /**
+     * Acción actual del scanner en la iteración del autómata.
+     *
+     * Define la instrucción operativa (γ(q, a)) que se aplicará sobre el byte
+     * evaluado en la iteración actual. Esta acción determina cómo afecta dicho
+     * byte al rango del lexema en construcción o al flujo de emisión de tokens.
+     *
+     * Semántica:
+     * - SKIP   → el byte es ignorado y no forma parte del lexema
+     * - EXPECT → valida una secuencia obligatoria mediante lookahead
+     * - APPEND → extiende el rango del lexema actual
+     * - PROBE  → valida opcionalmente una secuencia sin forzar error
+     * - EMIT   → finaliza y emite el lexema actual como token
+     *
+     * Esta propiedad es recalculada en cada iteración en función del estado
+     * del DFA y del byte actual, y consumida inmediatamente por el loop
+     * principal del scanner.
+     *
+     * @var ScannerAction
+     */
+    private ScannerAction $scanner_action = ScannerAction::SKIP;
 
     public function __construct(string $content, bool $normalize = false) {
         parent::__construct($content, $normalize);
@@ -270,12 +294,17 @@ abstract class TokenizerConfig extends Normalizer {
             /** @var string $byte */
             $byte = $this->consume_byte();
 
+
             if ($offset === null) {
                 $offset = $this->offset;
             }
 
             if ($column === null) {
                 $column = $this->column;
+            }
+
+            if ($byte === self::LINE_COMMENT[0]) {
+
             }
 
             $this->emit_token_identifier($byte, $offset, $column);
@@ -293,7 +322,7 @@ abstract class TokenizerConfig extends Normalizer {
      * @return void
      */
     private function emit_token_identifier(string &$byte, ?int &$offset = null, ?int &$column = null): void {
-        
+
     }
 
     private function emit_token_colon(string &$byte): void {
