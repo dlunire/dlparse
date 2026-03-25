@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace DLParse\Core\Config\Parser;
+namespace DLParse\Core\Config\Parser\Enums;
 
 /**
  * Representa las acciones de control del scanner durante la tokenización.

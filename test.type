@@ -7,3 +7,11 @@
 #     offset: $this->offset,
 #     length: $this->length
 # );
+
+CIENCIA: string = `Una cadena de texto con comillas invertidas`
+
+CIENCIA:  string = <<<DAVID
+    Todo el contenido que tu quieras aquí. 
+
+    Puede ser un markdown o un binario, pero se recomiendo que sea texto
+>>>DAVID

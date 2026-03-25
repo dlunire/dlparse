@@ -65,7 +65,7 @@ abstract class Normalizer {
      *
      * @var integer
      */
-    private readonly int $processed_content_size;
+    protected readonly int $processed_content_size;
 
     /**
      * Contenido original a ser analizado
@@ -620,14 +620,5 @@ abstract class Normalizer {
      */
     public function get_size(): int {
         return $this->size;
-    }
-
-    /**
-     * Devuelve el tamaño en byte del contenido procesado.
-     *
-     * @return integer
-     */
-    public function get_processed_size(): int {
-        return $this->processed_content_size;
     }
 }

@@ -28,7 +28,11 @@ declare(strict_types=1);
 
 namespace DLParse\Core\Config\Parser;
 
+use DLParse\Core\Config\Parser\Enums\ScannerAction;
+use DLParse\Core\Config\Parser\Enums\TokenTerminationState;
+use DLParse\Core\Config\Parser\Enums\TokenType;
 use DLParse\Core\Lexical\Normalizer;
+use DLParse\Exceptions\LexicalException;
 use DLParse\Exceptions\TokenizerException;
 
 /**
@@ -58,6 +62,42 @@ abstract class TypedEnvironmentLexer extends Normalizer {
     private const ASSIGN = "\x3d";
 
     /**
+     * Cadena de texto con comillas dobles
+     * 
+     * @var non-empty-string
+     */
+    private const STRING_DOUBLE_QUOTES = '\x22';
+
+    /**
+     * Cadena de texto con comillas simples
+     * 
+     * @var non-empty-string
+     */
+    private const STRING_SIMPLE_QUOTES = "\x27";
+
+    /**
+     * Cadena de texto con comillas invertidas (Backticks)
+     * 
+     * @var non-empty-string
+     */
+    private const STRING_BACKTICK_QUOTES = "\x60";
+
+    /**
+     * Delimitador de inicio para bloques de texto heredados (Heredoc)
+     * 
+     * @var non-empty-string
+     */
+    private const STRING_HEREDOC_START = "\x3c\x3c\x3c";
+
+    /**
+     * Delimitador de cierre para bloques de contenido (Heredoc invertido)
+     * 
+     * @var non-empty-string
+     */
+    private const STRING_HEREDOC_END = "\x3e\x3e\x3e";
+
+
+    /**
      * Comentario con apertura `#`
      * 
      * @var non-empty-string
@@ -65,25 +105,42 @@ abstract class TypedEnvironmentLexer extends Normalizer {
     private const HASH_LINE_COMMENT = "\x23";
 
     /**
-     * Comentario de una sola línea
-     * 
+     * Símbolo de inicio para comentarios de línea o de bloque.
+     *
+     * Representa el carácter `/`, que actúa como punto de bifurcación en el
+     * autómata léxico para la detección de construcciones de comentario.
+     *
+     * A partir de este símbolo, el sistema puede transitar hacia:
+     * - Comentario de línea (`//`)
+     * - Comentario de bloque (`\x2f\x2a ... \x2a\x2f`)
+     * - Otros operadores válidos del lenguaje (dependiendo de la gramática)
+     *
+     * Este valor no es un comentario por sí mismo, sino un prefijo ambiguo
+     * que requiere inspección del símbolo siguiente (lookahead) para resolver
+     * la transición correcta del autómata.
+     *
      * @var non-empty-string
      */
-    private const LINE_COMMENT = "\x2f\x2f";
+    private const SLASH_MARKER = "\x2f";
 
     /**
-     * Comentario de bloque de apertura
-     * 
-     * @var non-empty-string
+     * Conjunto finito de símbolos de continuación válidos post-COMMENT_PREFIX.
+     *
+     * Define el alfabeto reducido Σ' utilizado por el autómata léxico
+     * para resolver ambigüedades después de la detección del carácter '/'.
+     *
+     * Semánticamente:
+     * - '/' → siguiente símbolo de comentario de línea (//)
+     * - '*' → primer símbolo de comentario de bloque (/*...*)
+     *
+     * Si el byte siguiente NO está en este conjunto, se genera error léxico.
+     *
+     * @var non-empty-array{ "\x2f": true, "\x2a": true }
      */
-    private const OPEN_BLOCK_COMMENT = "\x2f\x2a";
-
-    /**
-     * Cierre de comentario de bloque
-     * 
-     * @var non-empty-string
-     */
-    private const CLOSE_BLOCK_COMMENT = "\x2a\x2f";
+    private const VALID_AFTER_SLASH = [
+        "\x2f" => true,
+        "\x2a" => true,
+    ];
 
     /**
      * Token inicial esperado
@@ -91,6 +148,13 @@ abstract class TypedEnvironmentLexer extends Normalizer {
      * @var TokenType
      */
     private TokenType $tokentype = TokenType::IDENTIFIER;
+
+    /**
+     * Indica cuál es el byte de terminación del token
+     * 
+     * @var TokenTerminationState $token_termination_state
+     */
+    private TokenTerminationState $token_termination_state = TokenTerminationState::NONE;
 
     /** @var Lexeme[] tokens */
     private array $tokens = [];
@@ -248,35 +312,6 @@ abstract class TypedEnvironmentLexer extends Normalizer {
     }
 
     /**
-     * Devuelve cada un byte en cada iteración
-     *
-     * @return non-empty-string
-     */
-    private function consume_byte(): string {
-        return $this->input[$this->offset++];
-    }
-
-    /**
-     * Determina si existe un símbolo siguiente en la secuencia de entrada,
-     * permitiendo una transición válida del autómata.
-     *
-     * Este método evalúa si el cursor actual ($offset) aún se encuentra dentro
-     * de los límites de la cadena procesada, modelando así la posibilidad de
-     * consumir un nuevo símbolo desde la "cinta de entrada".
-     *
-     * En términos formales, representa la condición:
-     * offset < |input|
-     *
-     * Donde |input| corresponde al tamaño total de la entrada procesada.
-     *
-     * @return bool `true` si el autómata puede avanzar al siguiente símbolo;
-     *              `false` si se ha alcanzado el final de la entrada.
-     */
-    private function has_next(): bool {
-        return $this->offset < $this->get_processed_size();
-    }
-
-    /**
      * Tokenizador
      *
      * @return void
@@ -290,11 +325,16 @@ abstract class TypedEnvironmentLexer extends Normalizer {
         /** @var int|null $column */
         $column = null;
 
-        while ($this->has_next()) {
-            /** @var string $byte */
-            $byte = $this->consume_byte();
+        while ($this->offset < $this->processed_content_size) {
+            /** @var non-empty-string $byte */
+            $byte = $this->input[$this->offset++];
 
+            # =================== WHITESPACE SKIP (OMITIDO) ======================
+            if ($this->scanner_action === ScannerAction::SKIP && $byte === self::WHITE_SPACE) {
+                continue;
+            }
 
+            # ============= CAPTURA DE POSICIÓN INICIAL DEL TOKEN ================
             if ($offset === null) {
                 $offset = $this->offset;
             }
@@ -303,29 +343,114 @@ abstract class TypedEnvironmentLexer extends Normalizer {
                 $column = $this->column;
             }
 
-            if ($byte === self::LINE_COMMENT[0]) {
-
+            # ====================== MANEJO ESPECIAL DE / ========================
+            if ($byte === self::SLASH_MARKER) {
+                $this->scanner_action = ScannerAction::EXPECT;
             }
 
-            $this->emit_token_identifier($byte, $offset, $column);
+            if ($this->scanner_action === ScannerAction::EXPECT) {
+
+                if (self::VALID_AFTER_SLASH[$byte] ?? false) {
+                    $this->scanner_action = ScannerAction::APPEND;
+
+                    $this->token_termination_state = $byte === self::SLASH_MARKER
+                        ? TokenTerminationState::LINE_TERMINATOR // → '//'
+                        : TokenTerminationState::BLOCK_TERMINATOR; // → '/*'
+                } else {
+                    throw new LexicalException(
+                        \sprintf(
+                            "Token '%s' inesperado después de '/' (línea %d, columna %d). Se esperaba '/' o '*' para comentario.",
+                            $byte,
+                            $this->line,
+                            $this->column
+                        )
+                    );
+                }
+            }
+
+            if ($byte === self::HASH_LINE_COMMENT) {
+                # Se indica que termina en \x0A (LF)
+                $this->token_termination_state = TokenTerminationState::LINE_TERMINATOR;
+                $this->scanner_action = ScannerAction::APPEND;
+            }
+
+            # ========================== EMISIÓN DE TOKEN ========================
+            if ($this->scanner_action === ScannerAction::APPEND) {
+
+                if ($this->token_termination_state->value === $byte) {
+                    $this->emit_token($offset, $column);
+                    continue;
+                }
+
+                $this->length++;
+            }
+        }
+
+        if ($this->length > 0) {
+            $this->emit_token($offset, $column);
         }
 
         print_r($this->tokens);
     }
 
     /**
-     * Emite el token correspondiente al identificador
+     * Emite un token excluyendo el byte de terminación actual.
      *
-     * @param string $byte Byte a evaluar
-     * @param integer|null $offset Posición del offset desde donde comienza el identificador.
-     * @param integer|null $column Columna desde donde empezó el identificador.
-     * @return void
+     * El lexema se extrae desde la posición original donde comenzó la captura
+     * hasta la longitud acumulada, la cual no debe incluir el carácter 
+     * que disparó esta llamada.
+     *
+     * @param int|null &$offset Referencia al punto de inicio del token. Se limpia tras emitir.
+     * @param int|null &$column Referencia a la columna de inicio. Se limpia tras emitir.
      */
-    private function emit_token_identifier(string &$byte, ?int &$offset = null, ?int &$column = null): void {
+    private function emit_token(?int &$offset, ?int &$column): void {
+        if ($offset === null || $column === null)
+            return;
 
+        $this->tokens[] = new Lexeme(
+            lexeme_content: \substr($this->input, $offset, $this->length),
+            tokentype: $this->tokentype,
+            line: $this->line,
+            column: $column,
+            offset: $offset,
+            length: $this->length
+        );
+
+        // Reset total del estado de captura para el siguiente ciclo
+        $offset = null;
+        $column = null;
+        $this->length = 0;
+
+        # El scanner vuelve a buscar un nuevo inicio
+        $this->scanner_action = ScannerAction::SKIP;
+        $this->token_termination_state = TokenTerminationState::NONE;
     }
 
     private function emit_token_colon(string &$byte): void {
 
+    }
+
+    /**
+     * Inspecciona el siguiente byte sin consumirlo (lookahead).
+     *
+     * Retorna el byte inmediatamente posterior al cursor actual (`offset + 1`)
+     * sin modificar el estado interno del scanner ni avanzar el puntero.
+     *
+     * Esta operación permite validar secuencias multi-byte dentro del autómata,
+     * siendo utilizada principalmente por acciones como EXPECT y PROBE para
+     * confirmar o descartar transiciones sin afectar la cinta de entrada.
+     *
+     * Comportamiento:
+     * - Si existe un byte siguiente → se devuelve dicho byte
+     * - Si se alcanza el final de la entrada → retorna null
+     *
+     * Garantías:
+     * - No altera `offset`, `line`, `column` ni el estado del lexema
+     * - No consume el byte inspeccionado
+     *
+     * @return string|null Byte siguiente en la entrada o null si no existe
+     */
+    private function peek(): ?string {
+        return $this->input[$this->offset + 1] ?? null;
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace DLParse\Core\Config\Parser;
 
+use DLParse\Core\Config\Parser\Enums\TokenType;
 use DLParse\Exceptions\TokenizerException;
 
 /**

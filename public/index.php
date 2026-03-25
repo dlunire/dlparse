@@ -15,7 +15,7 @@ class Test extends TypedEnvironmentLexer {
 }
 
 /** @var non-empty-string $content */
-$content = <<<EOT
+$content = <<<BASH
 # Indica si la aplicación debe correr o no en producción - Esa es otra prueba:
 DL_PRODUCTION: boolean = false
 
@@ -104,7 +104,7 @@ UUID: uuid = c61cc834-5957-11ee-9db5-0023ae88eef0
  * ```
  *
  */
-EOT;
+BASH;
 
 // $content = "IDENTIFICADOR: tipo = value\x0aOTRO_IDENTIFICADOR: tipo = \"otro valor\"";
 

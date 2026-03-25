@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace DLParse\Core\Config\Parser;
+namespace DLParse\Core\Config\Parser\Enums;
 
 /**
  * Copyright (c) 2025 David E Luna M
