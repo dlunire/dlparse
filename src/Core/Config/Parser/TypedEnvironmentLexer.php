@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace DLParse\Core\Config\Parser;
 
+use DLParse\Core\Config\Parser\Contracts\LexicalMaps;
 use DLParse\Core\Config\Parser\Enums\ScannerAction;
 use DLParse\Core\Config\Parser\Enums\TokenTerminationState;
 use DLParse\Core\Config\Parser\Enums\TokenType;
@@ -45,102 +46,7 @@ use DLParse\Exceptions\TokenizerException;
  * @copyright (c) 2026 David E Luna M
  * @license MIT
  */
-abstract class TypedEnvironmentLexer extends Normalizer {
-
-    /**
-     * Delimitador de anotación de tipo
-     * 
-     * @var non-empty-string
-     */
-    private const COLON = "\x3a";
-
-    /**
-     * Operaor de asignación
-     * 
-     * @var non-empty-string
-     */
-    private const ASSIGN = "\x3d";
-
-    /**
-     * Cadena de texto con comillas dobles
-     * 
-     * @var non-empty-string
-     */
-    private const STRING_DOUBLE_QUOTES = '\x22';
-
-    /**
-     * Cadena de texto con comillas simples
-     * 
-     * @var non-empty-string
-     */
-    private const STRING_SIMPLE_QUOTES = "\x27";
-
-    /**
-     * Cadena de texto con comillas invertidas (Backticks)
-     * 
-     * @var non-empty-string
-     */
-    private const STRING_BACKTICK_QUOTES = "\x60";
-
-    /**
-     * Delimitador de inicio para bloques de texto heredados (Heredoc)
-     * 
-     * @var non-empty-string
-     */
-    private const STRING_HEREDOC_START = "\x3c\x3c\x3c";
-
-    /**
-     * Delimitador de cierre para bloques de contenido (Heredoc invertido)
-     * 
-     * @var non-empty-string
-     */
-    private const STRING_HEREDOC_END = "\x3e\x3e\x3e";
-
-
-    /**
-     * Comentario con apertura `#`
-     * 
-     * @var non-empty-string
-     */
-    private const HASH_LINE_COMMENT = "\x23";
-
-    /**
-     * Símbolo de inicio para comentarios de línea o de bloque.
-     *
-     * Representa el carácter `/`, que actúa como punto de bifurcación en el
-     * autómata léxico para la detección de construcciones de comentario.
-     *
-     * A partir de este símbolo, el sistema puede transitar hacia:
-     * - Comentario de línea (`//`)
-     * - Comentario de bloque (`\x2f\x2a ... \x2a\x2f`)
-     * - Otros operadores válidos del lenguaje (dependiendo de la gramática)
-     *
-     * Este valor no es un comentario por sí mismo, sino un prefijo ambiguo
-     * que requiere inspección del símbolo siguiente (lookahead) para resolver
-     * la transición correcta del autómata.
-     *
-     * @var non-empty-string
-     */
-    private const SLASH_MARKER = "\x2f";
-
-    /**
-     * Conjunto finito de símbolos de continuación válidos post-COMMENT_PREFIX.
-     *
-     * Define el alfabeto reducido Σ' utilizado por el autómata léxico
-     * para resolver ambigüedades después de la detección del carácter '/'.
-     *
-     * Semánticamente:
-     * - '/' → siguiente símbolo de comentario de línea (//)
-     * - '*' → primer símbolo de comentario de bloque (/*...*)
-     *
-     * Si el byte siguiente NO está en este conjunto, se genera error léxico.
-     *
-     * @var non-empty-array{ "\x2f": true, "\x2a": true }
-     */
-    private const VALID_AFTER_SLASH = [
-        "\x2f" => true,
-        "\x2a" => true,
-    ];
+abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
 
     /**
      * Token inicial esperado
@@ -166,7 +72,7 @@ abstract class TypedEnvironmentLexer extends Normalizer {
      *
      * @var string
      */
-    private readonly string $input;
+    private static string $input;
 
     /** @var int $line */
     private int $line = 1;
@@ -179,7 +85,7 @@ abstract class TypedEnvironmentLexer extends Normalizer {
      *
      * @var integer
      */
-    private int $offset = 0;
+    private static int $offset = 0;
 
     /**
      * Longitud del lexema actualmente en construcción.
@@ -234,7 +140,7 @@ abstract class TypedEnvironmentLexer extends Normalizer {
      * @return void
      */
     private function load_content(): void {
-        $this->input = $this->get_normalized_content();
+        self::$input = $this->get_normalized_content();
     }
 
     /**
@@ -325,9 +231,9 @@ abstract class TypedEnvironmentLexer extends Normalizer {
         /** @var int|null $column */
         $column = null;
 
-        while ($this->offset < $this->processed_content_size) {
+        while (self::$offset < self::$processed_content_size) {
             /** @var non-empty-string $byte */
-            $byte = $this->input[$this->offset++];
+            $byte = self::$input[self::$offset++];
 
             # =================== WHITESPACE SKIP (OMITIDO) ======================
             if ($this->scanner_action === ScannerAction::SKIP && $byte === self::WHITE_SPACE) {
@@ -336,7 +242,7 @@ abstract class TypedEnvironmentLexer extends Normalizer {
 
             # ============= CAPTURA DE POSICIÓN INICIAL DEL TOKEN ================
             if ($offset === null) {
-                $offset = $this->offset;
+                $offset = self::$offset;
             }
 
             if ($column === null) {
@@ -394,21 +300,81 @@ abstract class TypedEnvironmentLexer extends Normalizer {
     }
 
     /**
+     * Nombre temporal de la función que va a escanear cada byte para identificar tokens
+     *
+     * @return void
+     */
+    public function scan(): void {
+
+        while (self::$offset < self::$processed_content_size) {
+            /** @var non-empty-string $byte */
+            $byte = self::$input[self::$offset];
+
+            if (self::HASH_LINE_COMMENT === $byte) {
+                $this->tokentype = TokenType::HASH_LINE_COMMENT;
+                $this->scanner_action = ScannerAction::APPEND;
+
+                $this->emit_token_hash_comment();
+                // break;
+            }
+
+            self::$offset++;
+        }
+
+        print_r($this->tokens);
+    }
+
+    /**
+     * Emite un token de comentario de línea
+     *
+     * @return void
+     */
+    public function emit_token_hash_comment(): void {
+        if ($this->scanner_action !== ScannerAction::APPEND)
+            return;
+
+        /** @var int  */
+        $start_offset = self::$offset;
+
+        /** @var int $start_column */
+        $start_column = $this->column;
+
+        /** @var false|int $next */
+        $next = strpos(
+            haystack: self::$input,
+            needle: self::$break_line,
+            offset: $start_offset
+        );
+
+        if ($next === false) {
+            $this->length = self::$processed_content_size - $start_offset;
+            $this->emit_token($start_offset, $start_column);
+            self::$offset = self::$processed_content_size;
+            return;
+        }
+
+        $this->length = $next - $start_offset;
+        $this->emit_token($start_offset, $start_column);
+
+        self::$offset = $next;
+    }
+
+    /**
      * Emite un token excluyendo el byte de terminación actual.
      *
      * El lexema se extrae desde la posición original donde comenzó la captura
      * hasta la longitud acumulada, la cual no debe incluir el carácter 
      * que disparó esta llamada.
      *
-     * @param int|null &$offset Referencia al punto de inicio del token. Se limpia tras emitir.
+     * @param int &$offset Referencia al punto de inicio del token. Se limpia tras emitir.
      * @param int|null &$column Referencia a la columna de inicio. Se limpia tras emitir.
      */
-    private function emit_token(?int &$offset, ?int &$column): void {
+    private function emit_token(int &$offset, ?int &$column): void {
         if ($offset === null || $column === null)
             return;
 
         $this->tokens[] = new Lexeme(
-            lexeme_content: \substr($this->input, $offset, $this->length),
+            lexeme_content: \substr(self::$input, $offset, $this->length),
             tokentype: $this->tokentype,
             line: $this->line,
             column: $column,
@@ -416,18 +382,12 @@ abstract class TypedEnvironmentLexer extends Normalizer {
             length: $this->length
         );
 
-        // Reset total del estado de captura para el siguiente ciclo
-        $offset = null;
         $column = null;
         $this->length = 0;
 
         # El scanner vuelve a buscar un nuevo inicio
         $this->scanner_action = ScannerAction::SKIP;
         $this->token_termination_state = TokenTerminationState::NONE;
-    }
-
-    private function emit_token_colon(string &$byte): void {
-
     }
 
     /**
@@ -451,6 +411,6 @@ abstract class TypedEnvironmentLexer extends Normalizer {
      * @return string|null Byte siguiente en la entrada o null si no existe
      */
     private function peek(): ?string {
-        return $this->input[$this->offset + 1] ?? null;
+        return self::$input[self::$offset + 1] ?? null;
     }
 }

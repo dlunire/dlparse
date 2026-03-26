@@ -3,7 +3,6 @@ declare(strict_types=1);
 ini_set('display_errors', 1);
 
 use DLParse\Core\Config\Parser\TypedEnvironmentLexer;
-use DLParse\Core\Lexical\Tokenizer;
 
 require_once dirname(__DIR__) . "/vendor/autoload.php";
 
@@ -16,7 +15,7 @@ class Test extends TypedEnvironmentLexer {
 
 /** @var non-empty-string $content */
 $content = <<<BASH
-# Indica si la aplicación debe correr o no en producción - Esa es otra prueba:
+# Indica# si la aplicación debe correr o no en producción - Esa es otra prueba:
 DL_PRODUCTION: boolean = false
 
 
@@ -104,10 +103,12 @@ UUID: uuid = c61cc834-5957-11ee-9db5-0023ae88eef0
  * ```
  *
  */
+
+# David
 BASH;
 
-// $content = "IDENTIFICADOR: tipo = value\x0aOTRO_IDENTIFICADOR: tipo = \"otro valor\"";
+// $content = "IDENTIFICADOR: tipo = value\x0aOTRO_IDENTIFICADOR: tipo = \"otro valor\"\x0a   # ciencia";
 
 $test = new Test($content);
 
-$test->tokenize();
+$test->scan();

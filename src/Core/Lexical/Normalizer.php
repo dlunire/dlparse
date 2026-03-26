@@ -65,7 +65,7 @@ abstract class Normalizer {
      *
      * @var integer
      */
-    protected readonly int $processed_content_size;
+    protected static int $processed_content_size;
 
     /**
      * Contenido original a ser analizado
@@ -101,7 +101,7 @@ abstract class Normalizer {
      *
      * @var string
      */
-    private string $normalized_content;
+    protected static string $normalized_content;
 
     /**
      * Saltos de líneas a ser normalizados
@@ -259,7 +259,7 @@ abstract class Normalizer {
      *
      * @var non-empty-string|null
      */
-    private ?string $break_line;
+    protected static ?string $break_line = null;
 
     /**
      * Permite crear una instancia con los parámetos ajustados a lo que quiere lograrse
@@ -307,9 +307,8 @@ abstract class Normalizer {
         $this->remove_bom();
         $this->determine_break_line();
         
-        if ($this->break_line !== null && !($this->normalize_space)) {
-            $this->normalized_content .= self::LF;
-            $this->processed_content_size = \strlen($this->normalized_content);
+        if (!($this->normalize_space)) {
+            self::$processed_content_size = \strlen(self::$normalized_content);
             return;
         }
 
@@ -317,7 +316,7 @@ abstract class Normalizer {
         $content = preg_replace_callback(
             pattern: $this->get_white_space_pattern(),
             callback: $this->process_match(...),
-            subject: $this->normalized_content
+            subject: self::$normalized_content
         );
 
         if (!\is_string($content)) {
@@ -334,11 +333,9 @@ abstract class Normalizer {
             throw new NormalizerException();
         }
 
-        $this->normalized_content = $this->trim($content);
-        $this->normalized_content .= self::LF;
-        $this->processed_content_size = \strlen($this->normalized_content);
-
-
+        self::$normalized_content = $this->trim($content);
+        self::$normalized_content .= self::LF;
+        self::$processed_content_size = \strlen(self::$normalized_content);
     }
 
     /**
@@ -428,7 +425,7 @@ abstract class Normalizer {
             $this->move_cursor_past_bom($bom);
         }
 
-        $this->normalized_content = substr($this->content, $this->cursor);
+        self::$normalized_content = substr($this->content, $this->cursor);
     }
 
     /**
@@ -554,7 +551,7 @@ abstract class Normalizer {
      * @return string
      */
     protected function get_normalized_content(): string {
-        return $this->normalized_content;
+        return self::$normalized_content;
     }
 
     /**
@@ -564,19 +561,22 @@ abstract class Normalizer {
      */
     protected function determine_break_line(): void {
         /** @var non-empty-string $bytes */
-        $bytes = substr($this->normalized_content, 0 -2);
+        $bytes = substr(self::$normalized_content, 0 -2);
 
         if ($this->is_crlf($bytes)) {
-            $this->break_line = self::CRLF;
-            return;
+            self::$break_line = self::CRLF;
         }
 
         if ($this->is_lf($bytes[1] ?? '')) {
-            $this->break_line = self::LF;
-            return;
+            self::$break_line = self::LF;
         }
 
-        $this->break_line = null;
+        if (self::$break_line === NULL) {
+            self::$break_line = self::LF;
+            self::$normalized_content .= self::LF;
+        }
+
+        self::$processed_content_size = \strlen(self::$normalized_content);
     }
 
     /**
@@ -606,11 +606,11 @@ abstract class Normalizer {
      */
     protected function get_break_line(): string {
         
-        if ($this->break_line === null) {
+        if (self::$break_line === null) {
             throw new NormalizerException("No se pudo determinar el tipo de salto de líneas del documento. Ejecute el comando 'composer run document' para corregir el problema");
         }
 
-        return $this->break_line;
+        return self::$break_line;
     }
 
     /**
