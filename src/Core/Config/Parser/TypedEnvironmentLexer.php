@@ -75,10 +75,10 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
     private static string $input;
 
     /** @var int $line */
-    private int $line = 1;
+    private static int $line = 1;
 
     /** @var int $column */
-    private int $column = 1;
+    private static int $column = 1;
 
     /**
      * Offset o cursor actual del byte
@@ -181,7 +181,7 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
             return;
         }
 
-        ++$this->line;
+        ++self::$line;
         $this->reset_column();
 
     }
@@ -205,7 +205,7 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
      * @return void
      */
     private function consume_column(): void {
-        ++$this->column;
+        ++self::$column;
     }
 
     /**
@@ -214,89 +214,7 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
      * @return void
      */
     private function reset_column(): void {
-        $this->column = 1;
-    }
-
-    /**
-     * Tokenizador
-     *
-     * @return void
-     */
-    public function tokenize(): void {
-        $buffer = [];
-
-        /** @var int|null $offset */
-        $offset = null;
-
-        /** @var int|null $column */
-        $column = null;
-
-        while (self::$offset < self::$processed_content_size) {
-            /** @var non-empty-string $byte */
-            $byte = self::$input[self::$offset++];
-
-            # =================== WHITESPACE SKIP (OMITIDO) ======================
-            if ($this->scanner_action === ScannerAction::SKIP && $byte === self::WHITE_SPACE) {
-                continue;
-            }
-
-            # ============= CAPTURA DE POSICIÓN INICIAL DEL TOKEN ================
-            if ($offset === null) {
-                $offset = self::$offset;
-            }
-
-            if ($column === null) {
-                $column = $this->column;
-            }
-
-            # ====================== MANEJO ESPECIAL DE / ========================
-            if ($byte === self::SLASH_MARKER) {
-                $this->scanner_action = ScannerAction::EXPECT;
-            }
-
-            if ($this->scanner_action === ScannerAction::EXPECT) {
-
-                if (self::VALID_AFTER_SLASH[$byte] ?? false) {
-                    $this->scanner_action = ScannerAction::APPEND;
-
-                    $this->token_termination_state = $byte === self::SLASH_MARKER
-                        ? TokenTerminationState::LINE_TERMINATOR // → '//'
-                        : TokenTerminationState::BLOCK_TERMINATOR; // → '/*'
-                } else {
-                    throw new LexicalException(
-                        \sprintf(
-                            "Token '%s' inesperado después de '/' (línea %d, columna %d). Se esperaba '/' o '*' para comentario.",
-                            $byte,
-                            $this->line,
-                            $this->column
-                        )
-                    );
-                }
-            }
-
-            if ($byte === self::HASH_LINE_COMMENT) {
-                # Se indica que termina en \x0A (LF)
-                $this->token_termination_state = TokenTerminationState::LINE_TERMINATOR;
-                $this->scanner_action = ScannerAction::APPEND;
-            }
-
-            # ========================== EMISIÓN DE TOKEN ========================
-            if ($this->scanner_action === ScannerAction::APPEND) {
-
-                if ($this->token_termination_state->value === $byte) {
-                    $this->emit_token($offset, $column);
-                    continue;
-                }
-
-                $this->length++;
-            }
-        }
-
-        if ($this->length > 0) {
-            $this->emit_token($offset, $column);
-        }
-
-        print_r($this->tokens);
+        self::$column = 1;
     }
 
     /**
@@ -318,6 +236,13 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
                 // break;
             }
 
+            if (self::SLASH_MARKER === $byte) {
+                $this->scanner_action = ScannerAction::EXPECT;
+                
+                /** Aquí es donde se va a definir si el comentario es de línea o de bloque */
+                $this->emit_token_comment();
+            }
+
             self::$offset++;
         }
 
@@ -325,11 +250,11 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
     }
 
     /**
-     * Emite un token de comentario de línea
+     * Emite un token de comentario de línea que empiecen por `#`
      *
      * @return void
      */
-    public function emit_token_hash_comment(): void {
+    private function emit_token_hash_comment(): void {
         if ($this->scanner_action !== ScannerAction::APPEND)
             return;
 
@@ -337,7 +262,7 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
         $start_offset = self::$offset;
 
         /** @var int $start_column */
-        $start_column = $this->column;
+        $start_column = self::$column;
 
         /** @var false|int $next */
         $next = strpos(
@@ -357,6 +282,45 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
         $this->emit_token($start_offset, $start_column);
 
         self::$offset = $next;
+        self::$line++;
+        self::$column = 1;
+    }
+
+    /**
+     * Emite un token de comentario de bloque o de línea, según lo que se encuentre en el siguiente byte
+     *
+     * @return void
+     */
+    private function emit_token_comment(): void {
+        if ($this->scanner_action !== ScannerAction::EXPECT) return;
+
+        /** @var int $start_column */
+        $start_column = self::$column;
+
+        /** @var int $start_offset */
+        $start_offset = self::$offset;
+
+        /** Adelante el cursor un paso dicional para determinar el tipo de comentario */
+        self::$offset++;
+
+    }
+
+    /**
+     * Emite token de comentarios de una sola línea que empiecen por `//`
+     *
+     * @return void
+     */
+    private function emit_token_line_comment(): void {
+
+    }
+
+    /**
+     * Emite token de comentarios de múltiples líneas.
+     *
+     * @return void
+     */
+    private function emit_token_block_comment(): void {
+
     }
 
     /**
@@ -376,7 +340,7 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
         $this->tokens[] = new Lexeme(
             lexeme_content: \substr(self::$input, $offset, $this->length),
             tokentype: $this->tokentype,
-            line: $this->line,
+            line: self::$line,
             column: $column,
             offset: $offset,
             length: $this->length
