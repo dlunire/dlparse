@@ -246,6 +246,7 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
             self::$offset++;
         }
 
+        # Este print es temporal para evaluar los tokens producidos para el lexema.
         print_r($this->tokens);
     }
 
