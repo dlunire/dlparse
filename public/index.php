@@ -15,13 +15,13 @@ class Test extends TypedEnvironmentLexer {
 
 /** @var non-empty-string $content */
 $content = <<<BASH
-# Indica si la aplicación debe correr o no en producción - Esa es otra prueba:
+# Indica \\x0Asi \\n la aplicación debe correr o no en producción - Esa es otra prueba:
 DL_PRODUCTION: boolean = false
 
 
 
 
-# Servidor de la base de datos:
+# Servidor de la base de datos // Un comentario interno:
 DL_DATABASE_HOST: string = "localhost"
 
 # Puerto del motor de la base de datos:
@@ -88,7 +88,7 @@ UUID: uuid = c61cc834-5957-11ee-9db5-0023ae88eef0
  * ```envtype
  * NUMERO: numeric = 100
  * ```
- *
+ * // david eduardo
  * O de esta otra forma:
  * 
  * ```envtype
@@ -104,8 +104,11 @@ UUID: uuid = c61cc834-5957-11ee-9db5-0023ae88eef0
  *
  */
 
-# David
+   # David
+   // David
 BASH;
+
+header("content-type: text/plain; utf-8", true, 200);
 
 // $content = "IDENTIFICADOR: tipo = value\x0aOTRO_IDENTIFICADOR: tipo = \"otro valor\"\x0a   # ciencia";
 $start = microtime(true);

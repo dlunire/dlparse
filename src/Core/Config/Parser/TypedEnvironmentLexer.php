@@ -105,7 +105,7 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
      *
      * @var int
      */
-    private int $length = 0;
+    private static int $length = 0;
 
     /**
      * Acción actual del scanner en la iteración del autómata.
@@ -144,80 +144,6 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
     }
 
     /**
-     * Consume un posible terminador de línea dentro del flujo de análisis léxico.
-     *
-     * Valida que el lexema recibido esté compuesto por exactamente
-     * un byte. Si la longitud no cumple con esta precondición, se lanza una
-     * TokenizerException.
-     *
-     * En caso de que el byte corresponda al carácter definido como terminador
-     * de línea (self::BREAK_LINE), el contador interno de líneas es incrementado.
-     * Si no corresponde a un salto de línea válido, el método finaliza sin
-     * efectos colaterales.
-     *
-     * @param string $line Byte candidato a terminador de línea.
-     *
-     * @throws TokenizerException Si la longitud del argumento es distinta de 1 byte.
-     *
-     * @return void
-     */
-    private function consume_line(string $line): void {
-        /** @var int $length */
-        $length = \strlen($line);
-
-        if ($length !== 1) {
-            throw new TokenizerException(
-                \sprintf(
-                    format: 'Longitud inválida del terminador de línea: se esperaba exactamente 1 byte, se recibieron %d bytes.',
-                    values: $length
-                )
-            );
-        }
-
-        /** @var boolean $break_line */
-        $break_line = $line === self::BREAK_LINE;
-
-        if (!$break_line) {
-            return;
-        }
-
-        ++self::$line;
-        $this->reset_column();
-
-    }
-
-    /**
-     * Consume una unidad lógica de columna dentro del flujo de bytes.
-     *
-     * Esta operación representa el avance horizontal del cursor
-     * dentro de la línea actual, permitiendo mantener el conteo
-     * de posición columnar durante el proceso de análisis léxico.
-     *
-     * Semánticamente:
-     * - Actualiza el estado interno asociado a la columna.
-     * - Refleja el desplazamiento producido por la lectura de un byte.
-     * - Puede reiniciarse implícitamente ante un salto de línea
-     *   (según la lógica que implemente la clase concreta).
-     *
-     * Esta función no retorna valor y forma parte del mecanismo
-     * interno de control posicional del normalizador.
-     *
-     * @return void
-     */
-    private function consume_column(): void {
-        ++self::$column;
-    }
-
-    /**
-     * Reinicia la columna a su estado inicial
-     *
-     * @return void
-     */
-    private function reset_column(): void {
-        self::$column = 1;
-    }
-
-    /**
      * Nombre temporal de la función que va a escanear cada byte para identificar tokens
      *
      * @return void
@@ -243,6 +169,12 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
             }
 
             self::$offset++;
+            self::$column++;
+
+            if (self::$break_line === $byte) {
+                self::$column = 1;
+                self::$line++;
+            }
         }
 
         # Este print es temporal para evaluar los tokens producidos para el lexema.
@@ -255,7 +187,7 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
      * @return void
      */
     private function emit_token_hash_comment(): void {
-        if ($this->scanner_action !== ScannerAction::APPEND)
+        if (!$this->is_append())
             return;
 
         /** @var int  */
@@ -272,13 +204,13 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
         );
 
         if ($next === false) {
-            $this->length = self::$processed_content_size - $start_offset;
+            self::$length = self::$processed_content_size - $start_offset;
             $this->emit_token($start_offset, $start_column);
             self::$offset = self::$processed_content_size;
             return;
         }
 
-        $this->length = $next - $start_offset;
+        self::$length = $next - $start_offset;
         $this->emit_token($start_offset, $start_column);
 
         self::$offset = $next;
@@ -292,27 +224,23 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
      * @return void
      */
     private function emit_token_comment(): void {
-        if ($this->scanner_action !== ScannerAction::EXPECT)
+        if (!$this->is_expect())
             return;
-
-        /** @var int $start_column */
-        $start_column = self::$column;
-
-        /** @var int $start_offset */
-        $start_offset = self::$offset;
-
-        /** Adelante el cursor un paso dicional para determinar el tipo de comentario */
-        self::$offset++;
 
         /** @var non-empty-string $byte */
         $byte = self::$input[self::$offset + 1] ?? null;
 
+        if ($byte === self::SLASH_MARKER || $byte === self::ASTERISK) {
+            $this->set_append();
+        }
+
         if ($byte === self::SLASH_MARKER) {
+            $this->set_tokentype_line_comment();
             $this->emit_token_line_comment();
-            return;
         }
 
         if ($byte === self::ASTERISK) {
+            $this->set_tokentype_block_comment();
             $this->emit_token_block_comment();
         }
     }
@@ -323,7 +251,30 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
      * @return void
      */
     private function emit_token_line_comment(): void {
+        if (!$this->is_append()) {
+            return;
+        }
 
+        /** @var int $start_columnb */
+        $start_column = self::$column;
+
+        /** @var int $start_offset */
+        $start_offset = self::$offset;
+
+        /** @var bool|int $offset */
+        $offset = strpos(self::$input, self::$break_line, $start_offset);
+
+        if ($offset === FALSE) {
+            self::$offset = self::$processed_content_size;
+            self::$length = self::$offset - $start_offset;
+            $this->emit_token($start_offset, $start_column);
+
+            return;
+        }
+
+        self::$offset = $offset;
+        self::$length = self::$offset - $start_offset;
+        $this->emit_token($start_offset, $start_column);
     }
 
     /**
@@ -332,7 +283,9 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
      * @return void
      */
     private function emit_token_block_comment(): void {
-
+        if (!$this->is_append()) {
+            return;
+        }
     }
 
     /**
@@ -350,43 +303,147 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
             return;
 
         self::$tokens[] = new Lexeme(
-            lexeme_content: \substr(self::$input, $offset, $this->length),
+            lexeme_content: \substr(self::$input, $offset, self::$length),
             tokentype: $this->tokentype,
             line: self::$line,
             column: $column,
             offset: $offset,
-            length: $this->length
+            length: self::$length
         );
 
         $column = null;
-        $this->length = 0;
 
-        # El scanner vuelve a buscar un nuevo inicio
-        $this->scanner_action = ScannerAction::SKIP;
-        $this->token_termination_state = TokenTerminationState::NONE;
+        $this->set_initial_state();
     }
 
     /**
-     * Inspecciona el siguiente byte sin consumirlo (lookahead).
+     * Verifica si el scanner está en modo de captura de bytes.
      *
-     * Retorna el byte inmediatamente posterior al cursor actual (`offset + 1`)
-     * sin modificar el estado interno del scanner ni avanzar el puntero.
-     *
-     * Esta operación permite validar secuencias multi-byte dentro del autómata,
-     * siendo utilizada principalmente por acciones como EXPECT y PROBE para
-     * confirmar o descartar transiciones sin afectar la cinta de entrada.
-     *
-     * Comportamiento:
-     * - Si existe un byte siguiente → se devuelve dicho byte
-     * - Si se alcanza el final de la entrada → retorna null
-     *
-     * Garantías:
-     * - No altera `offset`, `line`, `column` ni el estado del lexema
-     * - No consume el byte inspeccionado
-     *
-     * @return string|null Byte siguiente en la entrada o null si no existe
+     * @return boolean
      */
-    private function peek(): ?string {
-        return self::$input[self::$offset + 1] ?? null;
+    private function is_append(): bool {
+        return $this->scanner_action === ScannerAction::APPEND;
+    }
+
+    /**
+     * Verifica si el autómata está en modo de espera de un byte adicional
+     * para determinar el comportamiento.
+     *
+     * @return boolean
+     */
+    private function is_expect(): bool {
+        return $this->scanner_action === ScannerAction::EXPECT;
+    }
+
+    /**
+     * Establece el autómata en modo captura.
+     *
+     * @return void
+     */
+    private function set_append(): void {
+        $this->scanner_action = ScannerAction::APPEND;
+    }
+
+    /**
+     * Establece el comportamiento del autómata en modo de espera del siguiente
+     * byte para determinar la acción.
+     *
+     * @return void
+     */
+    private function set_expect(): void {
+        $this->scanner_action === ScannerAction::EXPECT;
+    }
+
+    /**
+     * Establece el comportamiento del autómata a modo de omisión
+     *
+     * @return void
+     */
+    private function set_skip(): void {
+        $this->scanner_action = ScannerAction::SKIP;
+    }
+
+    /**
+     * Establece el tipo de token como identificador de variable
+     *
+     * @return void
+     */
+    private function set_tokentype_identifier(): void {
+        $this->tokentype = TokenType::IDENTIFIER;
+    }
+
+    /**
+     * Establece el tipo de token como separador de definición de tipo.
+     *
+     * @return void
+     */
+    private function set_tokentype_colon(): void {
+        $this->tokentype = TokenType::COLON;
+    }
+
+    /**
+     * Establece el tipo de token como tipos.
+     *
+     * @return void
+     */
+    private function set_tokentype_type(): void {
+        $this->tokentype = TokenType::TYPE;
+    }
+
+    /**
+     * Establece el tipo de token como operador de asignación.
+     *
+     * @return void
+     */
+    private function set_tokentype_assign(): void {
+        $this->tokentype = TokenType::ASSIGN;
+    }
+
+    /**
+     * Establece el tipo de token como token de valor
+     *
+     * @return void
+     */
+    private function set_tokentype_value(): void {
+        $this->tokentype = TokenType::VALUE;
+    }
+
+    /**
+     * Establece el tipo de token como token de comentario en línea
+     * con doble barra diagonal.
+     *
+     * @return void
+     */
+    private function set_tokentype_line_comment(): void {
+        $this->tokentype = TokenType::LINE_COMMENT;
+    }
+
+    /**
+     * Establece el tipo de token como token de comentario que empieza por almoadilla
+     *
+     * @return void
+     */
+    private function set_tokentype_hash_comment(): void {
+        $this->tokentype = TokenType::HASH_LINE_COMMENT;
+    }
+
+    /**
+     * Establece el tipo de token como token de comentario de múltiples líneas o de bloque.
+     *
+     * @return void
+     */
+    private function set_tokentype_block_comment(): void {
+        $this->tokentype = TokenType::BLOCK_COMMENT;
+    }
+
+    /**
+     * Establece el estado inicial del autómata tras la emisión del token
+     *
+     * @return void
+     */
+    private function set_initial_state(): void {
+        self::$length = 0;
+        $this->scanner_action = ScannerAction::SKIP;
+        $this->token_termination_state = TokenTerminationState::NONE;
     }
 }
