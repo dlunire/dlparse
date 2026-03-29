@@ -83,7 +83,7 @@ interface LexicalMaps {
     public const TYPE_MAP = [
         "\x61" => true, "\x62" => true, "\x63" => true, "\x64" => true, "\x65" => true,
         "\x66" => true, "\x67" => true, "\x68" => true, "\x69" => true, "\x6a" => true,
-        "\x6b" => true, "\x6c" => true, "\x6d" => true, "\x6n" => true, "\x6f" => true,
+        "\x6b" => true, "\x6c" => true, "\x6d" => true, "\x6e" => true, "\x6f" => true,
         "\x70" => true, "\x71" => true, "\x72" => true, "\x73" => true, "\x74" => true,
         "\x75" => true, "\x76" => true, "\x77" => true, "\x78" => true, "\x79" => true,
         "\x7a" => true
@@ -164,24 +164,35 @@ interface LexicalMaps {
      */
     public const SLASH_MARKER = "\x2f";
 
-    /**
-     * Conjunto finito de símbolos de continuación válidos post-COMMENT_PREFIX.
+/**
+     * Carácter asterisco (*) utilizado como terminador de comentarios de bloque.
      *
-     * Define el alfabeto reducido Σ' utilizado por el autómata léxico
-     * para resolver ambigüedades después de la detección del carácter '/'.
+     * Representa el símbolo `*` (asterisco), que desempeña un papel crucial en el
+     * análisis léxico para identificar el cierre de comentarios de bloque.
+     * Forma parte de la secuencia de terminación  que delimita el final de
+     * un bloque de comentarios iniciado con `/*`.
      *
-     * Semánticamente:
-     * - '/' → siguiente símbolo de comentario de línea (//)
-     * - '*' → primer símbolo de comentario de bloque (/*...*)
+     * Aunque el asterisco puede utilizarse también como operador de multiplicación
+     * en expresiones aritméticas, en el contexto de este parser léxico se utiliza
+     * principalmente para resolver la transición de cierre en comentarios de bloque.
      *
-     * Si el byte siguiente NO está en este conjunto, se genera error léxico.
+     * Este carácter se identifica mediante su valor hexadecimal `\x2a` (42 en decimal)
+     * y es fundamental para la correcta tokenización de construcciones multi-línea
+     * de comentarios.
      *
-     * @var non-empty-array{ "\x2f": true, "\x2a": true }
+     * @const ASTERISK
+     * @var non-empty-string Representación del carácter asterisco en forma hexadecimal
+     *
+     * @example
+     * // Transición de cierre en comentario de bloque
+     * if ($char === LexicalMaps::ASTERISK && $nextChar === LexicalMaps::SLASH_MARKER) {
+     *     // Se encontró, terminar el comentario de bloque
+     * }
+     *
+     * @see LexicalMaps::SLASH_MARKER Para el inicio de comentarios (`/`) y cierre
+     * @since 1.0.0
      */
-    public const VALID_AFTER_SLASH = [
-        "\x2f" => true,
-        "\x2a" => true,
-    ];
+    public const ASTERISK = "\x2a";
 
     /**
      * Mapa para validación de caracteres Hexadecimales (0-9, a-f, A-F).

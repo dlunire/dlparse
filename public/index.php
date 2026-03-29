@@ -15,7 +15,7 @@ class Test extends TypedEnvironmentLexer {
 
 /** @var non-empty-string $content */
 $content = <<<BASH
-# Indica# si la aplicación debe correr o no en producción - Esa es otra prueba:
+# Indica si la aplicación debe correr o no en producción - Esa es otra prueba:
 DL_PRODUCTION: boolean = false
 
 
@@ -108,7 +108,11 @@ UUID: uuid = c61cc834-5957-11ee-9db5-0023ae88eef0
 BASH;
 
 // $content = "IDENTIFICADOR: tipo = value\x0aOTRO_IDENTIFICADOR: tipo = \"otro valor\"\x0a   # ciencia";
-
+$start = microtime(true);
 $test = new Test($content);
-
 $test->scan();
+$end = microtime(true);
+
+$total = $end - $start;
+
+print_r("\n\$total: {$total}");

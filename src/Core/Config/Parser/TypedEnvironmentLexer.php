@@ -63,7 +63,7 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
     private TokenTerminationState $token_termination_state = TokenTerminationState::NONE;
 
     /** @var Lexeme[] tokens */
-    private array $tokens = [];
+    private static array $tokens = [];
 
     // private string 
 
@@ -233,12 +233,11 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
                 $this->scanner_action = ScannerAction::APPEND;
 
                 $this->emit_token_hash_comment();
-                // break;
             }
 
             if (self::SLASH_MARKER === $byte) {
                 $this->scanner_action = ScannerAction::EXPECT;
-                
+
                 /** Aquí es donde se va a definir si el comentario es de línea o de bloque */
                 $this->emit_token_comment();
             }
@@ -247,7 +246,7 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
         }
 
         # Este print es temporal para evaluar los tokens producidos para el lexema.
-        print_r($this->tokens);
+        print_r(self::$tokens);
     }
 
     /**
@@ -293,7 +292,8 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
      * @return void
      */
     private function emit_token_comment(): void {
-        if ($this->scanner_action !== ScannerAction::EXPECT) return;
+        if ($this->scanner_action !== ScannerAction::EXPECT)
+            return;
 
         /** @var int $start_column */
         $start_column = self::$column;
@@ -304,6 +304,17 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
         /** Adelante el cursor un paso dicional para determinar el tipo de comentario */
         self::$offset++;
 
+        /** @var non-empty-string $byte */
+        $byte = self::$input[self::$offset + 1] ?? null;
+
+        if ($byte === self::SLASH_MARKER) {
+            $this->emit_token_line_comment();
+            return;
+        }
+
+        if ($byte === self::ASTERISK) {
+            $this->emit_token_block_comment();
+        }
     }
 
     /**
@@ -338,7 +349,7 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
         if ($offset === null || $column === null)
             return;
 
-        $this->tokens[] = new Lexeme(
+        self::$tokens[] = new Lexeme(
             lexeme_content: \substr(self::$input, $offset, $this->length),
             tokentype: $this->tokentype,
             line: self::$line,
