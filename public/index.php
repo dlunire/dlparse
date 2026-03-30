@@ -106,6 +106,7 @@ UUID: uuid = c61cc834-5957-11ee-9db5-0023ae88eef0
 
    # David
    // David
+/** Algo por aquí */
 BASH;
 
 header("content-type: text/plain; utf-8", true, 200);

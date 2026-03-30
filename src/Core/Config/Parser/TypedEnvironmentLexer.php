@@ -144,6 +144,43 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
     }
 
     /**
+     * Mueve el cursor un paso hacia adelante, pero debe utilizarse solo en casos
+     * muy específicos para evitar pérdida de rendimiento.
+     * 
+     *
+     * @return void
+     */
+    private function move_cursor(): void {
+        self::$offset++;
+        self::$column++;
+    }
+
+    /**
+     * Mueve el puntero al siguiente byte, pero restableciendo la columna a su posición original
+     * e incrementando el número de línea.
+     * 
+     * Este método solo debe utilizar cuando se encuentre un salto de línea.
+     *
+     * @return void
+     */
+    private function move_line(): void {
+        self::$offset++;
+        self::$line++;
+        self::$column = 1;
+    }
+
+    /**
+     * Aplica un salto compensado al cursor para superar un delimitador.
+     * 
+     * @param int $cursor_stride Ajuste de pasos (length - 1).
+     * @return void
+     */
+    private function apply_stride(int $cursor_stride): void {
+        self::$offset += $cursor_stride;
+        self::$column += $cursor_stride;
+    }
+
+    /**
      * Nombre temporal de la función que va a escanear cada byte para identificar tokens
      *
      * @return void
@@ -153,6 +190,12 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
         while (self::$offset < self::$processed_content_size) {
             /** @var non-empty-string $byte */
             $byte = self::$input[self::$offset];
+
+            /** @var non-empty-string|null $peek */
+            $peek = self::$input[self::$offset + 1] ?? null;
+
+            /** @var boolean $is_break_line */
+            $is_break_line = (self::CR === $byte && self::LF === $peek) || $byte === self::$break_line;
 
             if (self::HASH_LINE_COMMENT === $byte) {
                 $this->tokentype = TokenType::HASH_LINE_COMMENT;
@@ -171,7 +214,7 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
             self::$offset++;
             self::$column++;
 
-            if (self::$break_line === $byte) {
+            if ($is_break_line) {
                 self::$column = 1;
                 self::$line++;
             }
@@ -234,14 +277,14 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
             $this->set_append();
         }
 
-        if ($byte === self::SLASH_MARKER) {
-            $this->set_tokentype_line_comment();
-            $this->emit_token_line_comment();
-        }
-
         if ($byte === self::ASTERISK) {
             $this->set_tokentype_block_comment();
             $this->emit_token_block_comment();
+        }
+
+        if ($byte === self::SLASH_MARKER) {
+            $this->set_tokentype_line_comment();
+            $this->emit_token_line_comment();
         }
     }
 
@@ -261,19 +304,7 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
         /** @var int $start_offset */
         $start_offset = self::$offset;
 
-        /** @var bool|int $offset */
-        $offset = strpos(self::$input, self::$break_line, $start_offset);
-
-        if ($offset === FALSE) {
-            self::$offset = self::$processed_content_size;
-            self::$length = self::$offset - $start_offset;
-            $this->emit_token($start_offset, $start_column);
-
-            return;
-        }
-
-        self::$offset = $offset;
-        self::$length = self::$offset - $start_offset;
+        $this->string_position(self::$break_line, true);
         $this->emit_token($start_offset, $start_column);
     }
 
@@ -286,6 +317,15 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
         if (!$this->is_append()) {
             return;
         }
+
+        /** @var int|null $offset */
+        $offset = self::$offset;
+
+        /** @var int|null $column */
+        $column = self::$column;
+
+        $this->string_position(self::BLOCK_COMMENT_END, false, true);
+        $this->emit_token($offset, $column);
     }
 
     /**
@@ -445,5 +485,102 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
         self::$length = 0;
         $this->scanner_action = ScannerAction::SKIP;
         $this->token_termination_state = TokenTerminationState::NONE;
+    }
+
+    /**
+     * Mueve el cursor del autómata en función del criterio de búsqueda
+     *
+     * @param string $search Criterio de búsqueda
+     * @param boolean $with_strpos Indica si debe utilizarse el método `strpos(...)`. Por defecto es `false`.
+     * @param boolean $include_delimiter Indica si se debe incluir el delimitador como parte de los bytes a incluir
+     * @return void
+     */
+    private function string_position(string $search, bool $with_strpos = false, bool $include_delimiter = false): void {
+        /** @var int|null $offset */
+        $offset = null;
+
+        /** @var int|null $start_offset */
+        $start_offset = self::$offset;
+
+        /**
+         * Longitud de bytes de la búsqueda
+         * 
+         * @var int $search_length
+         */
+        $search_length = \strlen($search);
+
+        /**
+         * Salto relativo para compensar el avance natural del bucle.
+         * Evita errores "off-by-one" tras hallar el delimitador.
+         * 
+         * @var int $cursor_stride
+         */
+        $cursor_stride = $search_length - 1;
+
+        if ($with_strpos && !$include_delimiter) {
+            $offset = \strpos(self::$input, $search, self::$offset);
+
+            self::$offset = $offset !== FALSE
+                ? $offset
+                : self::$processed_content_size;
+
+            self::$length = self::$offset - $start_offset;
+            $this->apply_stride($cursor_stride);
+
+            return;
+        }
+
+        while (self::$offset < self::$processed_content_size) {
+
+            /** @var non-empty-string $byte */
+            $byte = self::$input[self::$offset];
+
+            /** @var non-empty-string|null $peek */
+            $peek = self::$input[self::$offset + 1] ?? null;
+
+            /** @var boolean $is_break_line */
+            $is_break_line = (self::CR === $byte && self::LF === $peek) || $byte === self::$break_line;
+
+            if ($byte === self::BACK_SLASH) {
+                $this->move_cursor();
+                continue;
+            }
+
+            if ($byte === $search[0]) {
+
+                if (\substr(self::$input, self::$offset, $search_length) === $search) {
+
+                    if ($include_delimiter) {
+                        $this->included_delimiter($start_offset, $search_length);
+                        break;
+                    }
+
+                    self::$length = self::$offset - $start_offset;
+                    $this->apply_stride($cursor_stride);
+                    break;
+                }
+            }
+
+            self::$offset++;
+            self::$column++;
+            
+            if ($is_break_line) {
+                self::$line++;
+                self::$column = 1;
+            }
+        }
+    }
+
+    /**
+     * Mueve el cursor hasta una posición que permita incluir también el delimitador
+     *
+     * @param integer $start_offset Offset desde donde comienza el lexema del token.
+     * @param integer $search_length Longitud de bytes del lexema.
+     * @return void
+     */
+    private function included_delimiter(int $start_offset, int $search_length): void {
+        self::$offset += $search_length;
+        self::$column += $search_length;
+        self::$length = self::$offset - $start_offset;
     }
 }

@@ -164,7 +164,17 @@ interface LexicalMaps {
      */
     public const SLASH_MARKER = "\x2f";
 
-/**
+    /**
+     * Carácter de escape: Barra invertida (Backslash) `\`.
+     * * Se utiliza dentro del autómata para anular el significado especial del 
+     * siguiente carácter (secuencias de escape), permitiendo la inclusión de 
+     * delimitadores o caracteres de control dentro de lexemas de tipo string 
+     * o comentarios.
+     * * Valor ASCII: 92 (0x5c).
+     */
+    public const BACK_SLASH = "\x5c";
+
+    /**
      * Carácter asterisco (*) utilizado como terminador de comentarios de bloque.
      *
      * Representa el símbolo `*` (asterisco), que desempeña un papel crucial en el
@@ -194,6 +204,8 @@ interface LexicalMaps {
      */
     public const ASTERISK = "\x2a";
 
+    public const BLOCK_COMMENT_END = "\x2a\x2f";
+
     /**
      * Mapa para validación de caracteres Hexadecimales (0-9, a-f, A-F).
      * Crucial para UUIDs y valores de color/bytes.
@@ -209,4 +221,11 @@ interface LexicalMaps {
         // Letras a-f (\x61 - \x66)
         "\x61" => true, "\x62" => true, "\x63" => true, "\x64" => true, "\x65" => true, "\x66" => true
     ];
+
+    /**
+     * Retorno de carro del sistema para los casos de uso de Windows como sistema operativo
+     * 
+     * @var non-empty-string
+     */
+    public const CR = "\x0d";
 }
