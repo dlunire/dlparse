@@ -90,3 +90,8 @@ UUID: uuid = c61cc834-5957-11ee-9db5-0023ae88eef0
    # David
    // David
 /** Algo por aquí */
+
+
+# Alguna cosa por aquí
+MULTITENANT: boolean = false
+

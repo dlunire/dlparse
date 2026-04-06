@@ -33,8 +33,6 @@ use DLParse\Core\Config\Parser\Enums\ScannerAction;
 use DLParse\Core\Config\Parser\Enums\TokenTerminationState;
 use DLParse\Core\Config\Parser\Enums\TokenType;
 use DLParse\Core\Lexical\Normalizer;
-use DLParse\Exceptions\LexicalException;
-use DLParse\Exceptions\TokenizerException;
 
 /**
  * Generador de tokens base para DL Typed Environment
@@ -221,7 +219,7 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
         }
 
         # Este print es temporal para evaluar los tokens producidos para el lexema.
-        print_r(self::$tokens);
+        // print_r(self::$tokens);
     }
 
     /**
@@ -535,7 +533,7 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
             /** @var non-empty-string $byte */
             $byte = self::$input[self::$offset];
 
-            /** @var non-empty-string|null $peek */
+            /** @var non-empty-string|null $peek Alguna documentación */
             $peek = self::$input[self::$offset + 1] ?? null;
 
             /** @var boolean $is_break_line */
