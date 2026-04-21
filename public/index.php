@@ -112,11 +112,13 @@ BASH;
 header("content-type: text/plain; utf-8", true, 200);
 
 // $content = "IDENTIFICADOR: tipo = value\x0aOTRO_IDENTIFICADOR: tipo = \"otro valor\"\x0a   # ciencia";
-$start = microtime(true);
+$start = hrtime(true);
 $test = new Test($content);
 $test->scan();
-$end = microtime(true);
+$end = hrtime(true);
 
 $total = $end - $start;
 
 print_r("\n\$total: {$total}");
+
+file_put_contents('test.txt', 'Esta es una prueba');
