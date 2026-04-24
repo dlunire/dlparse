@@ -9,7 +9,7 @@ require_once dirname(__DIR__) . "/vendor/autoload.php";
 class Test extends TypedEnvironmentLexer {
 
     public function __construct(string $content) {
-        parent::__construct($content, false);
+        parent::__construct(content: $content, normalize: false);
     }
 }
 
@@ -112,10 +112,10 @@ BASH;
 header("content-type: text/plain; utf-8", true, 200);
 
 // $content = "IDENTIFICADOR: tipo = value\x0aOTRO_IDENTIFICADOR: tipo = \"otro valor\"\x0a   # ciencia";
-$start = hrtime(true);
+$start = microtime(true);
 $test = new Test($content);
 $test->scan();
-$end = hrtime(true);
+$end = microtime(true);
 
 $total = $end - $start;
 

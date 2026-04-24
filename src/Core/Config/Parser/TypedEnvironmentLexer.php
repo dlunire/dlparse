@@ -175,11 +175,11 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
      */
     private function apply_stride(int $cursor_stride): void {
         self::$offset += $cursor_stride;
-        self::$column += $cursor_stride;
+        self::$column += $cursor_stride;    
     }
 
     /**
-     * Nombre temporal de la función que va a escanear cada byte para identificar tokens
+     * Punto de entrada para el escaneo del token
      *
      * @return void
      */
@@ -219,7 +219,7 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
         }
 
         # Este print es temporal para evaluar los tokens producidos para el lexema.
-        // print_r(self::$tokens);
+        print_r(self::$tokens);
     }
 
     /**
