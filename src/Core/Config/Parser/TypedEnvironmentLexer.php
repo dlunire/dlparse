@@ -179,7 +179,7 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
     }
 
     /**
-     * Punto de entrada para el escaneo del token
+     * Punto de entrada para el escaneo de cada token
      *
      * @return void
      */
@@ -192,7 +192,12 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
             /** @var non-empty-string|null $peek */
             $peek = self::$input[self::$offset + 1] ?? null;
 
-            /** @var boolean $is_break_line */
+            /**
+             * Permite contar cuántos saltos de líneas existen en el archivo que se está
+             * evaluando.
+             *  
+             * @var boolean $is_break_line
+             **/
             $is_break_line = (self::CR === $byte && self::LF === $peek) || $byte === self::$break_line;
 
             if (self::HASH_LINE_COMMENT === $byte) {

@@ -47,10 +47,10 @@ class Test extends TypedEnvironmentLexer {
 
 header("content-type: text/plain; charset=utf-8", true, 200);
 
-$start = hrtime(true);
+$start = microtime(true);
 $test = new Test("/** NO HAY CÓDIGO AQUÍ */");
 $test->scan();
-$end = hrtime(true);
+$end = microtime(true);
 
 $total = $end - $start;
 
