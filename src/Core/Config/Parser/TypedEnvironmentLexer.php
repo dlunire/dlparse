@@ -389,7 +389,7 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
      * @return void
      */
     private function set_expect(): void {
-        $this->scanner_action === ScannerAction::EXPECT;
+        $this->scanner_action = ScannerAction::EXPECT;
     }
 
     /**
