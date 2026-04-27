@@ -1,0 +1,23 @@
+/**
+ * Comentario de múltiples líneas.
+ * que se puede escribir en este archivo.
+ */
+
+ # Este es un comentario de una línea.
+
+ // Este es un comentario de una línea.
+
+# Comienza la sintaxis del lenguaje a partir de aquí
+# Esto que está aquí es el identificador de variable
+
+NAME: string = "David"
+LASTNAME: string = "Luna"
+AGE: integer = 41
+MULTITENANT: boolean = false
+DATABASE: boolean = true
+
+LOCAL: boolean = true
+PRODUCTION: boolean = true
+
+
+OTHER_NAME: string = NAME
