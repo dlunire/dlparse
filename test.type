@@ -20,4 +20,4 @@ LOCAL: boolean = true
 PRODUCTION: boolean = true
 
 
-OTHER_NAME: string = NAME
+CONTENT: string = "Contenido de pueba"  

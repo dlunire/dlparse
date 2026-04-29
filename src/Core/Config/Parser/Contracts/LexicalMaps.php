@@ -125,6 +125,17 @@ interface LexicalMaps {
     public const STRING_BACKTICK_QUOTES = "\x60";
 
     /**
+     * Mapa de delimitadores de string
+     * 
+     * @var array
+     */
+    public const STRING_MAP = [
+        self::STRING_DOUBLE_QUOTES => true,
+        self::STRING_SIMPLE_QUOTES => true,
+        self::STRING_BACKTICK_QUOTES => true
+    ];
+
+    /**
      * Delimitador de inicio para bloques de texto heredados (Heredoc)
      * 
      * @var non-empty-string

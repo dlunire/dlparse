@@ -162,7 +162,6 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
      * @return void
      */
     private function move_line(): void {
-        self::$offset++;
         self::$line++;
         self::$column = 1;
     }
@@ -175,7 +174,7 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
      */
     private function apply_stride(int $cursor_stride): void {
         self::$offset += $cursor_stride;
-        self::$column += $cursor_stride;    
+        self::$column += $cursor_stride;
     }
 
     /**
@@ -200,26 +199,39 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
              **/
             $is_break_line = (self::CR === $byte && self::LF === $peek) || $byte === self::$break_line;
 
+            if (self::ASSIGN == $byte) {
+                $this->set_append();
+                $this->emit_token_value();
+                continue;
+            }
+
             if (self::HASH_LINE_COMMENT === $byte) {
                 $this->tokentype = TokenType::HASH_LINE_COMMENT;
                 $this->scanner_action = ScannerAction::APPEND;
 
                 $this->emit_token_hash_comment();
+                continue;
             }
 
             if (self::SLASH_MARKER === $byte) {
-                $this->scanner_action = ScannerAction::EXPECT;
+                $this->set_expect();
 
                 /** Aquí es donde se va a definir si el comentario es de línea o de bloque */
                 $this->emit_token_comment();
+                continue;
+            }
+
+            if (self::IDENTIFIER_MAP[$byte] ?? false) {
+                $this->set_append();
+                $this->emit_token_identifier();
+                continue;
             }
 
             self::$offset++;
             self::$column++;
 
             if ($is_break_line) {
-                self::$column = 1;
-                self::$line++;
+                $this->move_line();
             }
         }
 
@@ -328,6 +340,53 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
         $column = self::$column;
 
         $this->string_position(self::BLOCK_COMMENT_END, false, true);
+        $this->emit_token($offset, $column);
+    }
+
+    /**
+     * Emite un token de identificador de variable.
+     * 
+     * @return void
+     */
+    public function emit_token_identifier(): void {
+        if (!$this->is_append()) {
+            return;
+        }
+
+        $this->set_tokentype_identifier();
+
+        /**
+         * @var int|null $offset
+         */
+        $offset = self::$offset;
+
+        /** @var int|null $column */
+        $column = self::$column;
+
+        $this->string_position(self::COLON, true, false);
+        $this->emit_token($offset, $column);
+    }
+
+    /**
+     * Emite un token de cadena de bytes de comillas dobles.
+     * 
+     * @return void
+     */
+    public function emit_token_value(): void {
+        if (!$this->is_append()) {
+            return;
+        }
+
+        $this->set_tokentype_value();
+
+        /** @var int|null $offset */
+        $offset = self::$offset;
+
+        /** @var int|null $column */
+        $column = self::$column;
+
+
+        $this->string_position(self::$break_line, true, false);
         $this->emit_token($offset, $column);
     }
 
@@ -566,7 +625,7 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
 
             self::$offset++;
             self::$column++;
-            
+
             if ($is_break_line) {
                 self::$line++;
                 self::$column = 1;
