@@ -54,4 +54,4 @@ $end = hrtime(true);
 
 $total = $end - $start;
 
-print_r("\n\$total (hrtime): {$total}");
+print_r("\n\$total (hrtime - nanosegundos): {$total}");
