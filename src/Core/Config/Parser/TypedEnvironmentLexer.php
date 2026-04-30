@@ -237,6 +237,8 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
 
         # Este print es temporal para evaluar los tokens producidos para el lexema.
         print_r(self::$tokens);
+
+        // echo json_encode(self::$tokens, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
     /**
@@ -365,6 +367,37 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
 
         $this->string_position(self::COLON, true, false);
         $this->emit_token($offset, $column);
+
+        /** @var non-empty-string|null $byte */
+        $byte = self::$input[self::$offset] ?? null;
+
+        if ($byte === null) return;
+
+        $this->emit_token_type();
+    }
+
+    /**
+     * Emite token de notación de tipo
+     * 
+     * @return void
+     */
+    public function emit_token_type(): void {
+
+        if (!$this->is_append()) {
+            return;
+        }
+
+        $this->set_tokentype_type();
+
+        /** @var int|null $offset */
+        $offset = self::$offset;
+
+        /** @var int|null $column */
+        $column = self::$column;
+
+        $this->string_position(self::ASSIGN, true);
+        $this->emit_token($offset, $column);
+
     }
 
     /**
@@ -386,7 +419,7 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
         $column = self::$column;
 
 
-        $this->string_position(self::$break_line, true, false);
+        $this->string_position(self::$break_line, true);
         $this->emit_token($offset, $column);
     }
 
@@ -415,6 +448,7 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
 
         $column = null;
 
+        self::$offset++;
         $this->set_initial_state();
     }
 
@@ -555,9 +589,10 @@ abstract class TypedEnvironmentLexer extends Normalizer implements LexicalMaps {
      * @param string $search Criterio de búsqueda
      * @param boolean $with_strpos Indica si debe utilizarse el método `strpos(...)`. Por defecto es `false`.
      * @param boolean $include_delimiter Indica si se debe incluir el delimitador como parte de los bytes a incluir
+     * @param int $steps [Opcional] Desplazamiento relativo para avanzar el cursor. Por defecto es 0.
      * @return void
      */
-    private function string_position(string $search, bool $with_strpos = false, bool $include_delimiter = false): void {
+    private function string_position(string $search, bool $with_strpos = false, bool $include_delimiter = false, int $steps = 0): void {
         /** @var int|null $offset */
         $offset = null;
 
